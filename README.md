@@ -1,4 +1,5 @@
 # GitDesk
+<img width="1648" height="957" alt="image" src="https://github.com/user-attachments/assets/806b3cba-8794-42de-992e-9242cd011529" />
 
 GitDesk is a cross-platform desktop Git UI built with C# and Avalonia. It focuses on a dense, practical workflow for browsing workspaces, inspecting commits, comparing file changes, and running common Git commands from a desktop interface.
 
