@@ -502,7 +502,8 @@ public sealed class MainWindowViewModel : ObservableObject
             nextPendingChangeLists.Add(commit);
         }
 
-        var stagedChanges = (await _git.GetStatusAsync(repositoryRoot))
+        var statusChanges = await _git.GetStatusAsync(repositoryRoot);
+        var stagedChanges = statusChanges
             .Select(change => new { Change = change, State = GetStagedChangeListState(change) })
             .Where(item => item.State is not null)
             .GroupBy(item => item.State!, item => item.Change)
@@ -510,7 +511,11 @@ public sealed class MainWindowViewModel : ObservableObject
 
         foreach (var group in stagedChanges)
         {
-            nextPendingChangeLists.Add(GitHistoryEntry.FromChanges(group.Key, group.ToArray()));
+            var changes = string.Equals(group.Key, "Conflicts", StringComparison.Ordinal)
+                ? await GetConflictChangeListChangesAsync(repositoryRoot, statusChanges)
+                : group.ToArray();
+
+            nextPendingChangeLists.Add(GitHistoryEntry.FromChanges(group.Key, changes));
         }
 
         _allPendingCommits.Clear();
@@ -706,6 +711,35 @@ public sealed class MainWindowViewModel : ObservableObject
         }
 
         return await _git.GetCommitChangesAsync(repositoryRoot, commit.Revision);
+    }
+
+    private async Task<IReadOnlyList<GitChange>> GetConflictChangeListChangesAsync(
+        string repositoryRoot,
+        IReadOnlyList<GitChange> statusChanges)
+    {
+        var conflictChanges = statusChanges
+            .Where(change => IsConflictStatus(change.Status))
+            .ToArray();
+
+        var incomingChanges = await _git.GetMergeIncomingChangesAsync(repositoryRoot);
+        if (incomingChanges.Count == 0)
+        {
+            return conflictChanges;
+        }
+
+        var changesByPath = incomingChanges.ToDictionary(
+            change => change.Path,
+            change => new GitChange(change.Status, change.Path, $"Pull {change.Details}"),
+            StringComparer.Ordinal);
+        foreach (var conflict in conflictChanges)
+        {
+            changesByPath[conflict.Path] = conflict;
+        }
+
+        return changesByPath.Values
+            .OrderByDescending(change => IsConflictStatus(change.Status))
+            .ThenBy(change => change.Path, StringComparer.Ordinal)
+            .ToArray();
     }
 
     public async Task RevertSelectedPendingCommitAsync()

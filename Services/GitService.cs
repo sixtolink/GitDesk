@@ -552,6 +552,46 @@ public sealed class GitService
         return ParseNameStatus(result.StandardOutput);
     }
 
+    public async Task<IReadOnlyList<GitChange>> GetMergeIncomingChangesAsync(
+        string repositoryRoot,
+        CancellationToken cancellationToken = default)
+    {
+        var mergeHeadResult = await RunAsync(
+            repositoryRoot,
+            new[] { "rev-parse", "-q", "--verify", "MERGE_HEAD" },
+            cancellationToken);
+
+        if (!mergeHeadResult.IsSuccess || string.IsNullOrWhiteSpace(mergeHeadResult.StandardOutput))
+        {
+            return Array.Empty<GitChange>();
+        }
+
+        var changes = new List<GitChange>();
+        foreach (var mergeHead in mergeHeadResult.StandardOutput.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var revision = mergeHead.Trim();
+            if (string.IsNullOrWhiteSpace(revision))
+            {
+                continue;
+            }
+
+            var result = await RunAsync(
+                repositoryRoot,
+                new[] { "diff", "--name-status", "-M", "HEAD", revision },
+                cancellationToken);
+
+            if (result.IsSuccess)
+            {
+                changes.AddRange(ParseNameStatus(result.StandardOutput));
+            }
+        }
+
+        return changes
+            .GroupBy(change => change.Path, StringComparer.Ordinal)
+            .Select(group => group.First())
+            .ToArray();
+    }
+
     public static string? ToWorkingDirectory(string path)
     {
         if (string.IsNullOrWhiteSpace(path))
