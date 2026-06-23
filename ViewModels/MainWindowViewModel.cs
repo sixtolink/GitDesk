@@ -50,7 +50,7 @@ public sealed class MainWindowViewModel : ObservableObject
         DeleteHeadPendingCommitKeepChangesCommand = new AsyncRelayCommand(_ => DeleteSelectedHeadCommitAsync(keepChanges: true));
         DeleteHeadPendingCommitDiscardChangesCommand = new AsyncRelayCommand(_ => DeleteSelectedHeadCommitAsync(keepChanges: false));
         AddSelectedCommand = new AsyncRelayCommand(_ => RunPathCommandAsync("Add", new[] { "add" }, true));
-        RevertSelectedCommand = new AsyncRelayCommand(_ => RunPathCommandAsync("Revert", new[] { "restore", "--staged", "--worktree" }, true));
+        RevertSelectedCommand = new AsyncRelayCommand(_ => RevertSelectedPathAsync());
         DeleteSelectedKeepLocalCommand = new AsyncRelayCommand(_ => DeleteSelectedPathAsync(keepLocal: true));
         DeleteSelectedDeleteLocalCommand = new AsyncRelayCommand(_ => DeleteSelectedPathAsync(keepLocal: false));
         DiffSelectedCommand = new AsyncRelayCommand(_ => ShowDiffAsync());
@@ -1229,6 +1229,70 @@ public sealed class MainWindowViewModel : ObservableObject
         StatusText = result.IsSuccess ? "Ready" : $"{title} failed";
     }
 
+    private async Task RevertSelectedPathAsync()
+    {
+        var repositoryRoot = await ResolveRepositoryRootAsync();
+        if (repositoryRoot is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(SelectedPath))
+        {
+            AppendOutput("No path selected.");
+            return;
+        }
+
+        var fullPath = Path.GetFullPath(SelectedPath);
+        if (PathEquals(fullPath, repositoryRoot))
+        {
+            AppendOutput("Cannot revert the repository root from the tree menu.");
+            return;
+        }
+
+        var restoreArgs = new List<string> { "restore", "--staged", "--worktree" };
+        GitService.AddPathspec(restoreArgs, repositoryRoot, SelectedPath);
+
+        StatusText = "Revert";
+        var restoreResult = await _git.RunAsync(repositoryRoot, restoreArgs);
+        AppendCommand("Revert", repositoryRoot, restoreArgs, restoreResult.StandardOutput, restoreResult.StandardError);
+
+        if (!restoreResult.IsSuccess && IsUnknownPathspec(restoreResult))
+        {
+            await CleanUnknownSelectedPathAsync(repositoryRoot);
+            await RefreshAsync();
+            StatusText = "Ready";
+            return;
+        }
+
+        await RefreshAsync();
+        StatusText = restoreResult.IsSuccess ? "Ready" : "Revert failed";
+    }
+
+    private async Task CleanUnknownSelectedPathAsync(string repositoryRoot)
+    {
+        var cleanArgs = new List<string> { "clean", "-fd" };
+        GitService.AddPathspec(cleanArgs, repositoryRoot, SelectedPath);
+        var cleanResult = await _git.RunAsync(repositoryRoot, cleanArgs);
+        AppendCommand("Clean untracked path", repositoryRoot, cleanArgs, cleanResult.StandardOutput, cleanResult.StandardError);
+
+        if (cleanResult.IsSuccess && !PathExists(SelectedPath))
+        {
+            RefreshWorkspaceTree();
+            return;
+        }
+
+        var cleanIgnoredArgs = new List<string> { "clean", "-fdX" };
+        GitService.AddPathspec(cleanIgnoredArgs, repositoryRoot, SelectedPath);
+        var cleanIgnoredResult = await _git.RunAsync(repositoryRoot, cleanIgnoredArgs);
+        AppendCommand("Clean ignored path", repositoryRoot, cleanIgnoredArgs, cleanIgnoredResult.StandardOutput, cleanIgnoredResult.StandardError);
+
+        if (cleanIgnoredResult.IsSuccess)
+        {
+            RefreshWorkspaceTree();
+        }
+    }
+
     private async Task DeleteSelectedPathAsync(bool keepLocal)
     {
         var repositoryRoot = await ResolveRepositoryRootAsync();
@@ -1504,6 +1568,18 @@ public sealed class MainWindowViewModel : ObservableObject
     private static string FirstOutputLine(string first, string second)
     {
         return SplitOutput(first).Concat(SplitOutput(second)).FirstOrDefault() ?? "No output.";
+    }
+
+    private static bool IsUnknownPathspec(GitCommandResult result)
+    {
+        var output = $"{result.StandardOutput}\n{result.StandardError}";
+        return output.Contains("pathspec", StringComparison.OrdinalIgnoreCase) &&
+               output.Contains("did not match any file", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool PathExists(string path)
+    {
+        return File.Exists(path) || Directory.Exists(path);
     }
 
     private static IEnumerable<string> GetPathspecs(string path)
