@@ -293,7 +293,7 @@ public sealed class GitService
         return result.StandardOutput
             .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries)
             .Select(branch => branch.Trim().TrimStart('*').Trim())
-            .Where(branch => !string.IsNullOrWhiteSpace(branch) && branch != "(HEAD detached)")
+            .Where(IsRealBranchName)
             .OrderBy(branch => branch, StringComparer.OrdinalIgnoreCase)
             .ToArray();
     }
@@ -321,11 +321,18 @@ public sealed class GitService
             .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries)
             .Select(branch => branch.Trim().TrimStart('*').Trim())
             .Where(branch =>
-                !string.IsNullOrWhiteSpace(branch) &&
+                IsRealBranchName(branch) &&
                 !branch.EndsWith("/HEAD", StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(branch => branch.StartsWith("origin/", StringComparison.OrdinalIgnoreCase))
             .ThenBy(branch => branch, StringComparer.OrdinalIgnoreCase)
             .ToArray();
+    }
+
+    public static bool IsRealBranchName(string? branch)
+    {
+        return !string.IsNullOrWhiteSpace(branch) &&
+               !branch.StartsWith("(", StringComparison.Ordinal) &&
+               !branch.Contains(" detached", StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task<string?> GetUpstreamBranchNameAsync(

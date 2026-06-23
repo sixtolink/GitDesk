@@ -897,6 +897,13 @@ public sealed class MainWindowViewModel : ObservableObject
 
     private async Task<bool> CheckoutBranchAsync(string repositoryRoot, string branch)
     {
+        if (!GitService.IsRealBranchName(branch))
+        {
+            AppendOutput($"Ignored invalid branch candidate: {branch}");
+            StatusText = "Checkout failed";
+            return false;
+        }
+
         StatusText = $"Checkout {branch}";
         var args = new[] { "checkout", branch };
         var result = await _git.RunAsync(repositoryRoot, args);
@@ -909,6 +916,13 @@ public sealed class MainWindowViewModel : ObservableObject
 
     private async Task<bool> CheckoutBranchFromRemoteAsync(string repositoryRoot, string localBranch, string remoteBranch)
     {
+        if (!GitService.IsRealBranchName(localBranch) || !GitService.IsRealBranchName(remoteBranch))
+        {
+            AppendOutput($"Ignored invalid branch candidate: {remoteBranch}");
+            StatusText = "Checkout failed";
+            return false;
+        }
+
         StatusText = $"Checkout {localBranch}";
         var args = new[] { "checkout", "-B", localBranch, "--track", remoteBranch };
         var result = await _git.RunAsync(repositoryRoot, args);
