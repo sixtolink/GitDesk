@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using GitDesk.Models;
 using LevelDB;
 
 namespace GitDesk.Services;
@@ -12,6 +13,7 @@ namespace GitDesk.Services;
 public sealed class WorkspaceStore
 {
     private const string HistoryKey = "workspace-history";
+    private const string GitHubSettingsKey = "github-settings";
     private const int MaxHistoryCount = 40;
     private readonly string _databasePath;
 
@@ -52,6 +54,43 @@ public sealed class WorkspaceStore
 
         await SaveAsync(history);
         return history;
+    }
+
+    public Task<GitHubSettings> LoadGitHubSettingsAsync()
+    {
+        return Task.Run(() =>
+        {
+            using var database = OpenDatabase();
+            var json = database.Get(GitHubSettingsKey);
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return GitHubSettings.Default;
+            }
+
+            var settings = JsonSerializer.Deserialize<GitHubSettingsDocument>(json);
+            return new GitHubSettings(
+                settings?.Host ?? GitHubSettings.Default.Host,
+                settings?.Username ?? string.Empty,
+                settings?.GitUserName ?? string.Empty,
+                settings?.GitUserEmail ?? string.Empty,
+                settings?.HasStoredCredential ?? false).Normalized();
+        });
+    }
+
+    public Task SaveGitHubSettingsAsync(GitHubSettings settings)
+    {
+        return Task.Run(() =>
+        {
+            using var database = OpenDatabase();
+            var normalized = settings.Normalized();
+            var document = new GitHubSettingsDocument(
+                normalized.Host,
+                normalized.Username,
+                normalized.GitUserName,
+                normalized.GitUserEmail,
+                normalized.HasStoredCredential);
+            database.Put(GitHubSettingsKey, JsonSerializer.Serialize(document));
+        });
     }
 
     private Task SaveAsync(IReadOnlyList<string> workspaces)
@@ -120,4 +159,11 @@ public sealed class WorkspaceStore
     }
 
     private sealed record WorkspaceHistoryDocument(string[] Workspaces);
+
+    private sealed record GitHubSettingsDocument(
+        string Host,
+        string Username,
+        string GitUserName,
+        string GitUserEmail,
+        bool HasStoredCredential);
 }

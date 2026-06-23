@@ -802,6 +802,126 @@ public sealed class MainWindowViewModel : ObservableObject
         return changes;
     }
 
+    public async Task<GitHubSettings> LoadGitHubSettingsAsync()
+    {
+        GitHubSettings settings;
+        try
+        {
+            settings = await _workspaceStore.LoadGitHubSettingsAsync();
+        }
+        catch (Exception ex)
+        {
+            AppendOutput($"Load GitHub settings failed: {ex.Message}");
+            settings = GitHubSettings.Default;
+        }
+
+        var workingDirectory = GetGitCommandWorkingDirectory();
+        var gitUserName = settings.GitUserName;
+        var gitUserEmail = settings.GitUserEmail;
+
+        if (string.IsNullOrWhiteSpace(gitUserName))
+        {
+            var result = await _git.GetConfigValueAsync(workingDirectory, "user.name", global: true);
+            if (result.IsSuccess)
+            {
+                gitUserName = result.StandardOutput.Trim();
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(gitUserEmail))
+        {
+            var result = await _git.GetConfigValueAsync(workingDirectory, "user.email", global: true);
+            if (result.IsSuccess)
+            {
+                gitUserEmail = result.StandardOutput.Trim();
+            }
+        }
+
+        return settings with
+        {
+            GitUserName = gitUserName,
+            GitUserEmail = gitUserEmail,
+        };
+    }
+
+    public async Task<string> GetCurrentOriginUrlAsync()
+    {
+        var repositoryRoot = !string.IsNullOrWhiteSpace(RepositoryRoot) && Directory.Exists(RepositoryRoot)
+            ? RepositoryRoot
+            : await _git.FindRepositoryRootAsync(!string.IsNullOrWhiteSpace(SelectedPath) ? SelectedPath : WorkspacePath);
+
+        return repositoryRoot is null
+            ? string.Empty
+            : await _git.GetOriginUrlAsync(repositoryRoot);
+    }
+
+    public async Task SaveGitHubSettingsAsync(
+        GitHubSettings settings,
+        string token,
+        bool configureGitIdentity,
+        bool saveCredential,
+        bool removeStoredCredential,
+        bool convertOriginToHttps)
+    {
+        var normalized = settings.Normalized();
+        var workingDirectory = GetGitCommandWorkingDirectory();
+        var hasStoredCredential = normalized.HasStoredCredential;
+
+        if (configureGitIdentity)
+        {
+            if (!string.IsNullOrWhiteSpace(normalized.GitUserName))
+            {
+                var result = await _git.SetGlobalConfigValueAsync(workingDirectory, "user.name", normalized.GitUserName);
+                AppendCommand("Set git user.name", workingDirectory, new[] { "config", "--global", "user.name", normalized.GitUserName }, result.StandardOutput, result.StandardError);
+            }
+
+            if (!string.IsNullOrWhiteSpace(normalized.GitUserEmail))
+            {
+                var result = await _git.SetGlobalConfigValueAsync(workingDirectory, "user.email", normalized.GitUserEmail);
+                AppendCommand("Set git user.email", workingDirectory, new[] { "config", "--global", "user.email", normalized.GitUserEmail }, result.StandardOutput, result.StandardError);
+            }
+        }
+
+        if (removeStoredCredential)
+        {
+            var result = await _git.RejectCredentialAsync(workingDirectory, normalized.Host, normalized.Username);
+            AppendOutput(result.IsSuccess
+                ? $"Removed GitHub credential for {normalized.Username}@{normalized.Host}."
+                : $"Remove GitHub credential failed: {FirstOutputLine(result.StandardError, result.StandardOutput)}");
+            hasStoredCredential = result.IsSuccess ? false : hasStoredCredential;
+        }
+
+        if (saveCredential && !string.IsNullOrWhiteSpace(token))
+        {
+            var result = await _git.StoreCredentialAsync(workingDirectory, normalized.Host, normalized.Username, token);
+            AppendOutput(result.IsSuccess
+                ? $"Stored GitHub credential for {normalized.Username}@{normalized.Host} with Git Credential Manager."
+                : $"Store GitHub credential failed: {FirstOutputLine(result.StandardError, result.StandardOutput)}");
+            hasStoredCredential = result.IsSuccess;
+        }
+
+        if (convertOriginToHttps)
+        {
+            var repositoryRoot = await ResolveRepositoryRootAsync();
+            if (repositoryRoot is not null)
+            {
+                var result = await _git.ConvertOriginToHttpsAsync(repositoryRoot, normalized.Host);
+                AppendCommand("Convert origin to HTTPS", repositoryRoot, new[] { "remote", "set-url", "origin", "https://..." }, result.StandardOutput, result.StandardError);
+            }
+        }
+
+        var nextSettings = normalized with { HasStoredCredential = hasStoredCredential };
+        try
+        {
+            await _workspaceStore.SaveGitHubSettingsAsync(nextSettings);
+            AppendOutput($"Saved GitHub settings for {nextSettings.Host}.");
+        }
+        catch (Exception ex)
+        {
+            AppendOutput($"Save GitHub settings failed: {ex.Message}");
+        }
+    }
+
     public async Task<bool> CommitSelectedFilesAsync(
         string message,
         IReadOnlyList<CommitFileSelection> selectedFiles)
@@ -1036,6 +1156,21 @@ public sealed class MainWindowViewModel : ObservableObject
         return root;
     }
 
+    private string GetGitCommandWorkingDirectory()
+    {
+        if (!string.IsNullOrWhiteSpace(RepositoryRoot) && Directory.Exists(RepositoryRoot))
+        {
+            return RepositoryRoot;
+        }
+
+        if (!string.IsNullOrWhiteSpace(WorkspacePath) && Directory.Exists(WorkspacePath))
+        {
+            return WorkspacePath;
+        }
+
+        return AppContext.BaseDirectory;
+    }
+
     private void ReplaceWorkspaceHistory(IReadOnlyList<string> history, string? selectedPath)
     {
         WorkspaceHistory.Clear();
@@ -1127,6 +1262,11 @@ public sealed class MainWindowViewModel : ObservableObject
     private static IEnumerable<string> SplitOutput(string text)
     {
         return text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+    }
+
+    private static string FirstOutputLine(string first, string second)
+    {
+        return SplitOutput(first).Concat(SplitOutput(second)).FirstOrDefault() ?? "No output.";
     }
 
     private static IEnumerable<string> GetPathspecs(string path)

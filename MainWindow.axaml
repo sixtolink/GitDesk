@@ -59,7 +59,9 @@
                 <MenuItem Header="Diff Selected" Command="{Binding DiffSelectedCommand}" />
                 <MenuItem Header="Log Selected" Command="{Binding LogSelectedCommand}" />
             </MenuItem>
-            <MenuItem Header="_Tools" />
+            <MenuItem Header="_Tools">
+                <MenuItem Header="Settings..." Click="OnSettingsClicked" />
+            </MenuItem>
             <MenuItem Header="_Window" />
             <MenuItem Header="_Help" />
         </Menu>

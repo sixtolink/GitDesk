@@ -252,6 +252,31 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void OnSettingsClicked(object? sender, RoutedEventArgs e)
+    {
+        var settings = await ViewModel.LoadGitHubSettingsAsync();
+        var originUrl = await ViewModel.GetCurrentOriginUrlAsync();
+        var dialogViewModel = new SettingsDialogViewModel(settings, originUrl);
+        var dialog = new SettingsDialog
+        {
+            DataContext = dialogViewModel,
+        };
+
+        var accepted = await dialog.ShowDialog<bool>(this);
+        if (!accepted)
+        {
+            return;
+        }
+
+        await ViewModel.SaveGitHubSettingsAsync(
+            dialogViewModel.ToSettings(dialogViewModel.HasStoredCredential),
+            dialogViewModel.Token,
+            dialogViewModel.ConfigureGitIdentity,
+            dialogViewModel.SaveCredential,
+            dialogViewModel.RemoveStoredCredential,
+            dialogViewModel.ConvertOriginToHttps);
+    }
+
     private void OnClearOutput(object? sender, RoutedEventArgs e)
     {
         ViewModel.OutputLines.Clear();

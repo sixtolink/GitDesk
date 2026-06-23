@@ -1,0 +1,120 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="GitDesk.SettingsDialog"
+        Title="Settings"
+        Width="720"
+        Height="560"
+        MinWidth="620"
+        MinHeight="480"
+        WindowStartupLocation="CenterOwner">
+    <Window.Styles>
+        <Style Selector="TextBlock.section-title">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+        <Style Selector="TextBlock.field-label">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,12,0" />
+        </Style>
+        <Style Selector="TextBlock.hint">
+            <Setter Property="Foreground" Value="#555555" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style Selector="Button.dialog-action">
+            <Setter Property="MinWidth" Value="96" />
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="*,Auto" Margin="18" RowSpacing="14">
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="18">
+                <Border BorderBrush="#D0D0D0" BorderThickness="1" Padding="14" Background="#FAFAFA">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="section-title" Text="Git Identity" />
+                        <TextBlock Classes="hint"
+                                   Text="These values are used by git commit. They are written with git config --global when enabled." />
+                        <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto" RowSpacing="8">
+                            <TextBlock Grid.Row="0" Grid.Column="0" Classes="field-label" Text="User name" />
+                            <TextBox Grid.Row="0"
+                                     Grid.Column="1"
+                                     Text="{Binding GitUserName, Mode=TwoWay}"
+                                     PlaceholderText="Commit author name" />
+                            <TextBlock Grid.Row="1" Grid.Column="0" Classes="field-label" Text="Email" />
+                            <TextBox Grid.Row="1"
+                                     Grid.Column="1"
+                                     Text="{Binding GitUserEmail, Mode=TwoWay}"
+                                     PlaceholderText="Commit author email" />
+                        </Grid>
+                        <CheckBox Content="Apply to global git config"
+                                  IsChecked="{Binding ConfigureGitIdentity, Mode=TwoWay}" />
+                    </StackPanel>
+                </Border>
+
+                <Border BorderBrush="#D0D0D0" BorderThickness="1" Padding="14" Background="#FAFAFA">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="section-title" Text="GitHub HTTPS Credentials" />
+                        <TextBlock Classes="hint"
+                                   Text="GitDesk follows GitHub Desktop's credential model: credentials are stored by Git Credential Manager, not in GitDesk's LevelDB settings. Use a Personal Access Token as the password for HTTPS remotes." />
+                        <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+                            <TextBlock Grid.Row="0" Grid.Column="0" Classes="field-label" Text="Host" />
+                            <TextBox Grid.Row="0"
+                                     Grid.Column="1"
+                                     Text="{Binding Host, Mode=TwoWay}"
+                                     PlaceholderText="github.com" />
+                            <TextBlock Grid.Row="1" Grid.Column="0" Classes="field-label" Text="Username" />
+                            <TextBox Grid.Row="1"
+                                     Grid.Column="1"
+                                     Text="{Binding Username, Mode=TwoWay}"
+                                     PlaceholderText="GitHub username" />
+                            <TextBlock Grid.Row="2" Grid.Column="0" Classes="field-label" Text="Token" />
+                            <TextBox Grid.Row="2"
+                                     Grid.Column="1"
+                                     Text="{Binding Token, Mode=TwoWay}"
+                                     PasswordChar="*"
+                                     PlaceholderText="Personal access token; leave empty to keep existing credential" />
+                        </Grid>
+                        <TextBlock Classes="hint" Text="{Binding StoredCredentialText}" />
+                        <CheckBox Content="Save token to Git Credential Manager"
+                                  IsChecked="{Binding SaveCredential, Mode=TwoWay}" />
+                        <CheckBox Content="Remove stored credential for this host and username"
+                                  IsChecked="{Binding RemoveStoredCredential, Mode=TwoWay}" />
+                    </StackPanel>
+                </Border>
+
+                <Border BorderBrush="#D0D0D0" BorderThickness="1" Padding="14" Background="#FAFAFA">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="section-title" Text="Current Repository Remote" />
+                        <Grid ColumnDefinitions="140,*" RowDefinitions="Auto" RowSpacing="8">
+                            <TextBlock Grid.Row="0" Grid.Column="0" Classes="field-label" Text="origin" />
+                            <TextBox Grid.Row="0"
+                                     Grid.Column="1"
+                                     Text="{Binding CurrentOriginUrl}"
+                                     IsReadOnly="True" />
+                        </Grid>
+                        <TextBlock Classes="hint"
+                                   Text="A token only works for HTTPS remotes. If origin is git@github.com:owner/repo.git, convert it to https://github.com/owner/repo.git before pushing." />
+                        <CheckBox Content="Convert current repository origin from GitHub SSH to HTTPS"
+                                  IsChecked="{Binding ConvertOriginToHttps, Mode=TwoWay}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
+            <TextBlock Grid.Column="0"
+                       Text="{Binding ErrorText}"
+                       Foreground="#B00020"
+                       VerticalAlignment="Center"
+                       IsVisible="{Binding HasError}" />
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+                <Button Classes="dialog-action" Content="Cancel" Click="OnCancelClicked" />
+                <Button Classes="dialog-action" Content="Save" Click="OnSaveClicked" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

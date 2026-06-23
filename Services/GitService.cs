@@ -27,12 +27,44 @@ public sealed class GitService
         IReadOnlyList<string> arguments,
         CancellationToken cancellationToken = default)
     {
+        return await RunAsync(workingDirectory, arguments, null, useUtf8Config: true, cancellationToken);
+    }
+
+    public async Task<GitCommandResult> RunCredentialAsync(
+        string workingDirectory,
+        string command,
+        string credentialInput,
+        bool forceCredentialManager = true,
+        CancellationToken cancellationToken = default)
+    {
+        var args = new List<string>();
+        if (forceCredentialManager)
+        {
+            args.Add("-c");
+            args.Add("credential.helper=");
+            args.Add("-c");
+            args.Add("credential.helper=manager");
+        }
+
+        args.Add("credential");
+        args.Add(command);
+        return await RunAsync(workingDirectory, args, credentialInput, useUtf8Config: false, cancellationToken);
+    }
+
+    private async Task<GitCommandResult> RunAsync(
+        string workingDirectory,
+        IReadOnlyList<string> arguments,
+        string? standardInput,
+        bool useUtf8Config,
+        CancellationToken cancellationToken = default)
+    {
         var startInfo = new ProcessStartInfo
         {
             FileName = "git",
             WorkingDirectory = workingDirectory,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
+            RedirectStandardInput = standardInput is not null,
             UseShellExecute = false,
             CreateNoWindow = true,
             StandardOutputEncoding = Encoding.UTF8,
@@ -42,10 +74,15 @@ public sealed class GitService
         startInfo.Environment["LANG"] = "C.UTF-8";
         startInfo.Environment["LC_ALL"] = "C.UTF-8";
         startInfo.Environment["LESSCHARSET"] = "utf-8";
+        startInfo.Environment["GIT_TERMINAL_PROMPT"] = "0";
+        startInfo.Environment["TERM"] = "dumb";
 
-        foreach (var argument in Utf8ConfigArguments)
+        if (useUtf8Config)
         {
-            startInfo.ArgumentList.Add(argument);
+            foreach (var argument in Utf8ConfigArguments)
+            {
+                startInfo.ArgumentList.Add(argument);
+            }
         }
 
         foreach (var argument in arguments)
@@ -56,12 +93,98 @@ public sealed class GitService
         using var process = new Process { StartInfo = startInfo };
         process.Start();
 
+        if (standardInput is not null)
+        {
+            await process.StandardInput.WriteAsync(standardInput.AsMemory(), cancellationToken);
+            await process.StandardInput.FlushAsync(cancellationToken);
+            process.StandardInput.Close();
+        }
+
         var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
         var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
 
         await process.WaitForExitAsync(cancellationToken);
 
         return new GitCommandResult(process.ExitCode, await stdoutTask, await stderrTask);
+    }
+
+    public async Task<GitCommandResult> GetConfigValueAsync(
+        string workingDirectory,
+        string key,
+        bool global,
+        CancellationToken cancellationToken = default)
+    {
+        var args = new List<string> { "config" };
+        if (global)
+        {
+            args.Add("--global");
+        }
+
+        args.Add("--get");
+        args.Add(key);
+        return await RunAsync(workingDirectory, args, cancellationToken);
+    }
+
+    public async Task<GitCommandResult> SetGlobalConfigValueAsync(
+        string workingDirectory,
+        string key,
+        string value,
+        CancellationToken cancellationToken = default)
+    {
+        return await RunAsync(
+            workingDirectory,
+            new[] { "config", "--global", key, value },
+            cancellationToken);
+    }
+
+    public async Task<GitCommandResult> StoreCredentialAsync(
+        string workingDirectory,
+        string host,
+        string username,
+        string password,
+        CancellationToken cancellationToken = default)
+    {
+        var input = FormatCredentialInput(host, username, password);
+        var result = await RunCredentialAsync(workingDirectory, "approve", input, forceCredentialManager: true, cancellationToken);
+        return result.IsSuccess
+            ? result
+            : await RunCredentialAsync(workingDirectory, "approve", input, forceCredentialManager: false, cancellationToken);
+    }
+
+    public async Task<GitCommandResult> RejectCredentialAsync(
+        string workingDirectory,
+        string host,
+        string username,
+        CancellationToken cancellationToken = default)
+    {
+        var input = FormatCredentialInput(host, username, null);
+        var result = await RunCredentialAsync(workingDirectory, "reject", input, forceCredentialManager: true, cancellationToken);
+        return result.IsSuccess
+            ? result
+            : await RunCredentialAsync(workingDirectory, "reject", input, forceCredentialManager: false, cancellationToken);
+    }
+
+    public async Task<string> GetOriginUrlAsync(
+        string repositoryRoot,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await RunAsync(repositoryRoot, new[] { "remote", "get-url", "origin" }, cancellationToken);
+        return result.IsSuccess ? result.StandardOutput.Trim() : string.Empty;
+    }
+
+    public async Task<GitCommandResult> ConvertOriginToHttpsAsync(
+        string repositoryRoot,
+        string host,
+        CancellationToken cancellationToken = default)
+    {
+        var origin = await GetOriginUrlAsync(repositoryRoot, cancellationToken);
+        var httpsUrl = TryConvertGitHubSshToHttps(origin, host);
+        if (httpsUrl is null)
+        {
+            return new GitCommandResult(1, string.Empty, $"origin is not a GitHub SSH URL: {origin}");
+        }
+
+        return await RunAsync(repositoryRoot, new[] { "remote", "set-url", "origin", httpsUrl }, cancellationToken);
     }
 
     public async Task<string?> FindRepositoryRootAsync(string path, CancellationToken cancellationToken = default)
@@ -261,6 +384,52 @@ public sealed class GitService
 
         arguments.Add("--");
         arguments.Add(relativePath.Replace(Path.DirectorySeparatorChar, '/'));
+    }
+
+    public static string? TryConvertGitHubSshToHttps(string remoteUrl, string host)
+    {
+        if (string.IsNullOrWhiteSpace(remoteUrl))
+        {
+            return null;
+        }
+
+        var normalizedHost = string.IsNullOrWhiteSpace(host) ? "github.com" : host.Trim();
+        if (normalizedHost.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+            normalizedHost.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        {
+            normalizedHost = new Uri(normalizedHost).Host;
+        }
+
+        normalizedHost = normalizedHost.TrimEnd('/');
+        var scpPrefix = $"git@{normalizedHost}:";
+        if (remoteUrl.StartsWith(scpPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return $"https://{normalizedHost}/{remoteUrl[scpPrefix.Length..]}";
+        }
+
+        var sshPrefix = $"ssh://git@{normalizedHost}/";
+        if (remoteUrl.StartsWith(sshPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return $"https://{normalizedHost}/{remoteUrl[sshPrefix.Length..]}";
+        }
+
+        return null;
+    }
+
+    private static string FormatCredentialInput(string host, string username, string? password)
+    {
+        var builder = new StringBuilder()
+            .AppendLine("protocol=https")
+            .AppendLine($"host={host.Trim()}")
+            .AppendLine($"username={username.Trim()}");
+
+        if (!string.IsNullOrEmpty(password))
+        {
+            builder.AppendLine($"password={password}");
+        }
+
+        builder.AppendLine();
+        return builder.ToString();
     }
 
     private static IReadOnlyList<GitChange> ParseStatus(string output)
