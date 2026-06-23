@@ -236,6 +236,54 @@ public sealed class GitService
         return result.IsSuccess ? result.StandardOutput.Trim() : string.Empty;
     }
 
+    public async Task<string?> GetCurrentBranchNameAsync(
+        string repositoryRoot,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await RunAsync(repositoryRoot, new[] { "rev-parse", "--abbrev-ref", "HEAD" }, cancellationToken);
+        if (!result.IsSuccess)
+        {
+            return null;
+        }
+
+        var branch = result.StandardOutput.Trim();
+        return string.IsNullOrWhiteSpace(branch) || branch == "HEAD" ? null : branch;
+    }
+
+    public async Task<string?> GetUpstreamBranchNameAsync(
+        string repositoryRoot,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await RunAsync(
+            repositoryRoot,
+            new[] { "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}" },
+            cancellationToken);
+        if (!result.IsSuccess)
+        {
+            return null;
+        }
+
+        var upstream = result.StandardOutput.Trim();
+        return string.IsNullOrWhiteSpace(upstream) ? null : upstream;
+    }
+
+    public async Task<bool> IsAncestorOfHeadAsync(
+        string repositoryRoot,
+        string revision,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(revision))
+        {
+            return false;
+        }
+
+        var result = await RunAsync(
+            repositoryRoot,
+            new[] { "merge-base", "--is-ancestor", revision, "HEAD" },
+            cancellationToken);
+        return result.IsSuccess;
+    }
+
     public async Task<GitCommandResult> ConvertOriginToHttpsAsync(
         string repositoryRoot,
         string host,

@@ -990,7 +990,34 @@ public sealed class MainWindowViewModel : ObservableObject
 
     public async Task PushToOriginAsync()
     {
-        await RunRepositoryCommandAsync("Push to origin", new[] { "push", "origin", "HEAD" }, true);
+        var repositoryRoot = await ResolveRepositoryRootAsync();
+        if (repositoryRoot is null)
+        {
+            return;
+        }
+
+        if (SelectedPendingCommit is { IsCommitEntry: true } selectedCommit &&
+            !await _git.IsAncestorOfHeadAsync(repositoryRoot, selectedCommit.Revision))
+        {
+            AppendOutput($"Selected ChangeList {selectedCommit.ShortRevision} is not on the current branch HEAD. Checkout its branch before pushing it.");
+            StatusText = "Push failed";
+            return;
+        }
+
+        var branch = await _git.GetCurrentBranchNameAsync(repositoryRoot);
+        if (string.IsNullOrWhiteSpace(branch))
+        {
+            AppendOutput("Cannot push from detached HEAD. Checkout a branch before pushing.");
+            StatusText = "Push failed";
+            return;
+        }
+
+        var upstream = await _git.GetUpstreamBranchNameAsync(repositoryRoot);
+        var args = string.IsNullOrWhiteSpace(upstream)
+            ? new[] { "push", "-u", "origin", $"HEAD:refs/heads/{branch}" }
+            : new[] { "push", "origin", $"HEAD:{GetOriginBranchName(upstream, branch)}" };
+
+        await RunRepositoryCommandAsync("Push to origin", args, true);
     }
 
     private async Task RunSelectedPendingCommitCommandAsync(string title, IReadOnlyList<string> arguments, bool refreshAfter)
@@ -1292,6 +1319,14 @@ public sealed class MainWindowViewModel : ObservableObject
     private static string FirstOutputLine(string first, string second)
     {
         return SplitOutput(first).Concat(SplitOutput(second)).FirstOrDefault() ?? "No output.";
+    }
+
+    private static string GetOriginBranchName(string upstream, string currentBranch)
+    {
+        const string originPrefix = "origin/";
+        return upstream.StartsWith(originPrefix, StringComparison.OrdinalIgnoreCase)
+            ? upstream[originPrefix.Length..]
+            : currentBranch;
     }
 
     private static IEnumerable<string> GetPathspecs(string path)
