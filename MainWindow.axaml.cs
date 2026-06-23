@@ -255,6 +255,7 @@ public partial class MainWindow : Window
     private void OnClearOutput(object? sender, RoutedEventArgs e)
     {
         ViewModel.OutputLines.Clear();
+        ViewModel.NotifyOutputTextChanged();
     }
 
     private void OnExit(object? sender, RoutedEventArgs e)

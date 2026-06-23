@@ -80,6 +80,13 @@ public sealed class MainWindowViewModel : ObservableObject
 
     public ObservableCollection<string> OutputLines { get; } = new();
 
+    public string OutputText => string.Join(Environment.NewLine, OutputLines);
+
+    public void NotifyOutputTextChanged()
+    {
+        OnPropertyChanged(nameof(OutputText));
+    }
+
     public AsyncRelayCommand RefreshCommand { get; }
 
     public AsyncRelayCommand InitRepositoryCommand { get; }
@@ -1071,6 +1078,8 @@ public sealed class MainWindowViewModel : ObservableObject
         {
             OutputLines.RemoveAt(0);
         }
+
+        OnPropertyChanged(nameof(OutputText));
     }
 
     private void ApplyPendingFilter()

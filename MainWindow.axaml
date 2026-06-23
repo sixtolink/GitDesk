@@ -310,10 +310,15 @@
                                     Click="OnClearOutput" />
                         </Grid>
                     </Border>
-                    <ListBox ItemsSource="{Binding OutputLines}"
+                    <TextBox Text="{Binding OutputText}"
                              FontFamily="Consolas"
                              FontSize="12"
-                             Background="#FFFFFF" />
+                             Background="#FFFFFF"
+                             IsReadOnly="True"
+                             AcceptsReturn="True"
+                             TextWrapping="NoWrap"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto" />
                 </DockPanel>
             </Border>
 
