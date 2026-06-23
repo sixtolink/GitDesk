@@ -196,7 +196,7 @@
                                             </ContextMenu>
                                         </DataGrid.ContextMenu>
                                         <DataGrid.Columns>
-                                            <DataGridTextColumn Header="State" Binding="{Binding ChangeListState}" Width="95" />
+                                            <DataGridTextColumn Header="State" Binding="{Binding ChangeListState}" Width="150" />
                                             <DataGridTextColumn Header="Commit" Binding="{Binding ShortRevision}" Width="130" />
                                             <DataGridTextColumn Header="Author" Binding="{Binding Author}" Width="180" />
                                             <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="110" />
