@@ -258,6 +258,9 @@ public sealed class MainWindowViewModel : ObservableObject
 
     public bool CanResolveSelectedConflict => SelectedCommitChange is not null && IsConflictStatus(SelectedCommitChange.Status);
 
+    public bool CanOpenSelectedChangeListMerge => SelectedPendingCommit is { ChangeListState: "Conflicts" } changeList &&
+                                                  changeList.Changes.Any(change => IsConflictStatus(change.Status));
+
     public bool CanAbortMerge => IsSelectedChangeListState("Conflicts");
 
     public string SelectedPendingCommitChangesTitle
@@ -632,6 +635,11 @@ public sealed class MainWindowViewModel : ObservableObject
                 SelectedPendingCommitChanges.Add(change);
             }
 
+            if (string.Equals(commit.ChangeListState, "Conflicts", StringComparison.Ordinal))
+            {
+                SelectedCommitChange = commit.Changes.FirstOrDefault(change => IsConflictStatus(change.Status));
+            }
+
             SelectedPendingCommitChangesTitle = $"Selected CL Changes - {commit.Subject}";
             return;
         }
@@ -701,6 +709,25 @@ public sealed class MainWindowViewModel : ObservableObject
         var file = await _git.GetMergeConflictFileAsync(repositoryRoot, SelectedCommitChange);
         StatusText = "Ready";
         return file;
+    }
+
+    public bool SelectFirstConflictFromSelectedChangeList()
+    {
+        if (SelectedPendingCommit is not { ChangeListState: "Conflicts" } changeList)
+        {
+            AppendOutput("No Conflicts ChangeList selected.");
+            return false;
+        }
+
+        var conflict = changeList.Changes.FirstOrDefault(change => IsConflictStatus(change.Status));
+        if (conflict is null)
+        {
+            AppendOutput("No conflict file found in selected ChangeList.");
+            return false;
+        }
+
+        SelectedCommitChange = conflict;
+        return true;
     }
 
     public async Task<bool> SaveSelectedMergeConflictContentAsync(string content)
@@ -2132,6 +2159,7 @@ public sealed class MainWindowViewModel : ObservableObject
         OnPropertyChanged(nameof(CanCancelSelectedStagedAdd));
         OnPropertyChanged(nameof(CanCancelSelectedStagedDelete));
         OnPropertyChanged(nameof(CanRevertSelectedStagedModified));
+        OnPropertyChanged(nameof(CanOpenSelectedChangeListMerge));
         OnPropertyChanged(nameof(CanAbortMerge));
         NotifySelectedCommitChangeActionStateChanged();
     }

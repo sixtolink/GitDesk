@@ -194,6 +194,8 @@
                                                 <MenuItem x:Name="CancelStagedAddMenuItem" Header="Cancel Add" Click="OnCancelStagedAdd" />
                                                 <MenuItem x:Name="CancelStagedDeleteMenuItem" Header="Cancel Delete" Click="OnCancelStagedDelete" />
                                                 <MenuItem x:Name="RevertStagedModifiedMenuItem" Header="Revert Modified" Click="OnRevertStagedModified" />
+                                                <MenuItem x:Name="PendingOpenMergeMenuItem" Header="Open Merge" Click="OnOpenMergeFromChangeList" />
+                                                <MenuItem x:Name="PendingAbortMergeMenuItem" Header="Abort Merge" Click="OnAbortMerge" />
                                                 <Separator x:Name="PendingCommitSeparator" />
                                                 <MenuItem x:Name="RevertCommitMenuItem" Header="Revert Commit" Click="OnRevertPendingCommit" />
                                                 <MenuItem x:Name="RestoreCommitMenuItem" Header="Restore Changes To Worktree" Click="OnRestorePendingCommit" />

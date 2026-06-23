@@ -239,6 +239,21 @@ public partial class MainWindow : Window
 
     private async void OnOpenMergeConflict(object? sender, RoutedEventArgs e)
     {
+        await ShowSelectedMergeConflictAsync();
+    }
+
+    private async void OnOpenMergeFromChangeList(object? sender, RoutedEventArgs e)
+    {
+        if (!ViewModel.SelectFirstConflictFromSelectedChangeList())
+        {
+            return;
+        }
+
+        await ShowSelectedMergeConflictAsync();
+    }
+
+    private async Task ShowSelectedMergeConflictAsync()
+    {
         var file = await ViewModel.RunBusyAsync("Opening merge", ViewModel.GetSelectedMergeConflictFileAsync);
         if (file is null)
         {
@@ -434,6 +449,8 @@ public partial class MainWindow : Window
         CancelStagedAddMenuItem.IsVisible = ViewModel.CanCancelSelectedStagedAdd;
         CancelStagedDeleteMenuItem.IsVisible = ViewModel.CanCancelSelectedStagedDelete;
         RevertStagedModifiedMenuItem.IsVisible = ViewModel.CanRevertSelectedStagedModified;
+        PendingOpenMergeMenuItem.IsVisible = ViewModel.CanOpenSelectedChangeListMerge;
+        PendingAbortMergeMenuItem.IsVisible = ViewModel.CanAbortMerge;
     }
 
     private void UpdateCLChangesContextMenu()
