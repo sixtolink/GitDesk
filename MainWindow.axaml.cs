@@ -130,10 +130,18 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (MainCommitTabControl.SelectedItem is TabItem { Header: "History" })
+        if (MainCommitTabControl.SelectedItem is TabItem { Header: "ChangeLists" })
         {
             HistoryGrid.SelectedItem = null;
             ViewModel.SelectedHistoryEntry = null;
+            ViewModel.ClearSelectedCommitChanges();
+            return;
+        }
+
+        if (MainCommitTabControl.SelectedItem is TabItem { Header: "History" })
+        {
+            PendingGrid.SelectedItem = null;
+            ViewModel.SelectedPendingCommit = null;
             ViewModel.ClearSelectedCommitChanges();
         }
     }
