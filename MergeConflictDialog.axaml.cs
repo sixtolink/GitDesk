@@ -9,8 +9,6 @@ namespace GitDesk;
 public partial class MergeConflictDialog : Window
 {
     private Func<string, Task<bool>> _saveAsync = _ => Task.FromResult(false);
-    private Func<Task<bool>> _useOursAsync = () => Task.FromResult(false);
-    private Func<Task<bool>> _useTheirsAsync = () => Task.FromResult(false);
     private Func<Task<bool>> _markResolvedAsync = () => Task.FromResult(false);
 
     public MergeConflictDialog()
@@ -20,33 +18,65 @@ public partial class MergeConflictDialog : Window
 
     public MergeConflictDialog(
         Func<string, Task<bool>> saveAsync,
-        Func<Task<bool>> useOursAsync,
-        Func<Task<bool>> useTheirsAsync,
         Func<Task<bool>> markResolvedAsync)
     {
         _saveAsync = saveAsync;
-        _useOursAsync = useOursAsync;
-        _useTheirsAsync = useTheirsAsync;
         _markResolvedAsync = markResolvedAsync;
         InitializeComponent();
     }
 
     private MergeConflictDialogViewModel ViewModel => (MergeConflictDialogViewModel)DataContext!;
 
+    private void OnPreviousConflictClicked(object? sender, RoutedEventArgs e)
+    {
+        ViewModel.SelectPreviousConflict();
+    }
+
+    private void OnNextConflictClicked(object? sender, RoutedEventArgs e)
+    {
+        ViewModel.SelectNextConflict();
+    }
+
+    private void OnApplySelectedOursClicked(object? sender, RoutedEventArgs e)
+    {
+        ViewModel.ApplySelectedOurs();
+    }
+
+    private void OnApplySelectedTheirsClicked(object? sender, RoutedEventArgs e)
+    {
+        ViewModel.ApplySelectedTheirs();
+    }
+
+    private void OnApplySelectedBothClicked(object? sender, RoutedEventArgs e)
+    {
+        ViewModel.ApplySelectedBoth();
+    }
+
+    private void OnApplyAllOursClicked(object? sender, RoutedEventArgs e)
+    {
+        ViewModel.ApplyAllOurs();
+    }
+
+    private void OnApplyAllTheirsClicked(object? sender, RoutedEventArgs e)
+    {
+        ViewModel.ApplyAllTheirs();
+    }
+
+    private void OnApplyAllBothClicked(object? sender, RoutedEventArgs e)
+    {
+        ViewModel.ApplyAllBoth();
+    }
+
     private async void OnUseOursClicked(object? sender, RoutedEventArgs e)
     {
-        if (await _useOursAsync())
-        {
-            Close(true);
-        }
+        ViewModel.UseWholeOursFile();
+        await _saveAsync(ViewModel.WorkingContent);
     }
 
     private async void OnUseTheirsClicked(object? sender, RoutedEventArgs e)
     {
-        if (await _useTheirsAsync())
-        {
-            Close(true);
-        }
+        ViewModel.UseWholeTheirsFile();
+        await _saveAsync(ViewModel.WorkingContent);
     }
 
     private async void OnSaveClicked(object? sender, RoutedEventArgs e)

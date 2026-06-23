@@ -262,8 +262,6 @@ public partial class MainWindow : Window
 
         var dialog = new MergeConflictDialog(
             content => ViewModel.RunBusyAsync("Saving merge file", () => ViewModel.SaveSelectedMergeConflictContentAsync(content)),
-            () => ViewModel.RunBusyAsync("Using ours", ViewModel.UseOursForSelectedConflictAsync),
-            () => ViewModel.RunBusyAsync("Using theirs", ViewModel.UseTheirsForSelectedConflictAsync),
             () => ViewModel.RunBusyAsync("Marking resolved", ViewModel.MarkSelectedConflictResolvedAsync))
         {
             DataContext = new MergeConflictDialogViewModel(file),

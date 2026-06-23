@@ -2,17 +2,18 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="GitDesk.MergeConflictDialog"
         Title="Merge Conflict"
-        Width="1500"
-        Height="900"
-        MinWidth="980"
-        MinHeight="620"
+        Width="1540"
+        Height="940"
+        MinWidth="1080"
+        MinHeight="700"
         WindowStartupLocation="CenterOwner">
     <Window.Styles>
         <Style Selector="Button.toolbar">
-            <Setter Property="MinWidth" Value="96" />
-            <Setter Property="Height" Value="30" />
-            <Setter Property="Margin" Value="4,0,0,0" />
-            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="MinWidth" Value="92" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Margin" Value="3,0,0,0" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="FontSize" Value="12" />
         </Style>
         <Style Selector="TextBlock.header">
             <Setter Property="FontWeight" Value="SemiBold" />
@@ -42,15 +43,15 @@
                     <TextBlock Text="{Binding TitleText}" FontSize="14" FontWeight="SemiBold" />
                     <TextBlock Text="{Binding SummaryText}" FontSize="12" Foreground="#555555" />
                 </StackPanel>
-                <Button Grid.Column="1" Classes="toolbar" Content="Use Ours" Click="OnUseOursClicked" />
-                <Button Grid.Column="2" Classes="toolbar" Content="Use Theirs" Click="OnUseTheirsClicked" />
+                <Button Grid.Column="1" Classes="toolbar" Content="Use Ours File" Click="OnUseOursClicked" />
+                <Button Grid.Column="2" Classes="toolbar" Content="Use Theirs File" Click="OnUseTheirsClicked" />
                 <Button Grid.Column="3" Classes="toolbar" Content="Save" Click="OnSaveClicked" />
                 <Button Grid.Column="4" Classes="toolbar" Content="Mark Resolved" Click="OnMarkResolvedClicked" />
                 <Button Grid.Column="5" Classes="toolbar" Content="Close" Click="OnCloseClicked" />
             </Grid>
         </Border>
 
-        <Grid RowDefinitions="*,5,*" ColumnDefinitions="*,5,*,5,*" Margin="8">
+        <Grid RowDefinitions="*,5,132,5,*" ColumnDefinitions="*,5,*,5,*" Margin="8">
             <Border Grid.Row="0" Grid.Column="0" BorderBrush="#C8C8C8" BorderThickness="1" Background="#FFFFFF">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Padding="6,3" Background="#ECECEC" BorderBrush="#D6D6D6" BorderThickness="0,0,0,1">
@@ -84,10 +85,60 @@
 
             <GridSplitter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="5" Height="5" Background="#D0D0D0" ResizeDirection="Rows" />
 
-            <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" BorderBrush="#C8C8C8" BorderThickness="1" Background="#FFFFFF">
+            <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" BorderBrush="#B8B8B8" BorderThickness="1" Background="#FAFAFA">
+                <Grid RowDefinitions="Auto,*" ColumnDefinitions="360,*">
+                    <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Padding="6,3" Background="#ECECEC" BorderBrush="#D6D6D6" BorderThickness="0,0,0,1">
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                            <TextBlock Grid.Column="0" Classes="header" Text="{Binding MergeSummaryText}" />
+                            <Button Grid.Column="1" Classes="toolbar" Content="Prev" Click="OnPreviousConflictClicked" />
+                            <Button Grid.Column="2" Classes="toolbar" Content="Next" Click="OnNextConflictClicked" />
+                            <Button Grid.Column="3" Classes="toolbar" Content="Selected Ours" Click="OnApplySelectedOursClicked" />
+                            <Button Grid.Column="4" Classes="toolbar" Content="Selected Theirs" Click="OnApplySelectedTheirsClicked" />
+                            <Button Grid.Column="5" Classes="toolbar" Content="Selected Both" Click="OnApplySelectedBothClicked" />
+                            <Button Grid.Column="6" Classes="toolbar" Content="All Ours" Click="OnApplyAllOursClicked" />
+                            <Button Grid.Column="7" Classes="toolbar" Content="All Theirs" Click="OnApplyAllTheirsClicked" />
+                            <Button Grid.Column="8" Classes="toolbar" Content="All Both" Click="OnApplyAllBothClicked" />
+                        </Grid>
+                    </Border>
+
+                    <DataGrid Grid.Row="1"
+                              Grid.Column="0"
+                              ItemsSource="{Binding ConflictBlocks}"
+                              SelectedItem="{Binding SelectedConflictBlock, Mode=TwoWay}"
+                              AutoGenerateColumns="False"
+                              GridLinesVisibility="All"
+                              HeadersVisibility="Column"
+                              RowHeight="26"
+                              IsReadOnly="True">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Block" Binding="{Binding DisplayName}" Width="90" />
+                            <DataGridTextColumn Header="Ours" Binding="{Binding OursPreview}" Width="130" />
+                            <DataGridTextColumn Header="Theirs" Binding="{Binding TheirsPreview}" Width="130" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <TextBox Grid.Row="1"
+                             Grid.Column="1"
+                             Classes="merge-text"
+                             Text="{Binding WorkingContent}"
+                             IsReadOnly="True"
+                             Background="#FFFFFF" />
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="5" Height="5" Background="#D0D0D0" ResizeDirection="Rows" />
+
+            <Border Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="5" BorderBrush="#C8C8C8" BorderThickness="1" Background="#FFFFFF">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Padding="6,3" Background="#ECECEC" BorderBrush="#D6D6D6" BorderThickness="0,0,0,1">
-                        <TextBlock Classes="header" Text="{Binding WorkingHeaderText}" />
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Classes="header" Text="{Binding WorkingHeaderText}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding SelectedConflictText}"
+                                       FontSize="12"
+                                       Foreground="#555555"
+                                       VerticalAlignment="Center" />
+                        </Grid>
                     </Border>
                     <TextBox Classes="merge-text" Text="{Binding WorkingContent, Mode=TwoWay}" />
                 </DockPanel>
