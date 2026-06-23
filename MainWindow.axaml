@@ -187,7 +187,7 @@
                                               HeadersVisibility="Column"
                                               RowHeight="28">
                                         <DataGrid.ContextMenu>
-                                            <ContextMenu>
+                                            <ContextMenu Opened="OnPendingContextMenuOpened">
                                                 <MenuItem x:Name="PendingCopyMenuItem" Header="Copy Content" Click="OnCopyPendingContent" />
                                                 <Separator x:Name="PendingPrimarySeparator" />
                                                 <MenuItem x:Name="PendingPushMenuItem" Header="Push" Click="OnPushClicked" />
@@ -269,8 +269,12 @@
                                           HeadersVisibility="Column"
                                           RowHeight="28">
                                     <DataGrid.ContextMenu>
-                                        <ContextMenu>
-                                            <MenuItem Header="Compare" Click="OnCompareCLChange" />
+                                        <ContextMenu Opened="OnCLChangesContextMenuOpened">
+                                            <MenuItem x:Name="CompareCLChangeMenuItem" Header="Compare" Click="OnCompareCLChange" />
+                                            <Separator x:Name="CLChangeActionSeparator" />
+                                            <MenuItem x:Name="CancelCLChangeAddMenuItem" Header="Cancel Add" Click="OnCancelSelectedCLChangeAdd" />
+                                            <MenuItem x:Name="CancelCLChangeDeleteMenuItem" Header="Cancel Delete" Click="OnCancelSelectedCLChangeDelete" />
+                                            <MenuItem x:Name="RevertCLChangeModifiedMenuItem" Header="Revert Modified" Click="OnRevertSelectedCLChangeModified" />
                                         </ContextMenu>
                                     </DataGrid.ContextMenu>
                                     <DataGrid.Columns>

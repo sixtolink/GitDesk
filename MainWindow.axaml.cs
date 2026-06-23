@@ -120,6 +120,7 @@ public partial class MainWindow : Window
 
         CLChangesGrid.SelectedItem = change;
         ViewModel.SelectedCommitChange = change;
+        UpdateCLChangesContextMenu();
     }
 
     private void OnMainCommitTabSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -155,6 +156,21 @@ public partial class MainWindow : Window
     private async void OnRevertStagedModified(object? sender, RoutedEventArgs e)
     {
         await ViewModel.RevertSelectedStagedModifiedAsync();
+    }
+
+    private async void OnCancelSelectedCLChangeAdd(object? sender, RoutedEventArgs e)
+    {
+        await ViewModel.CancelSelectedCLChangeAddAsync();
+    }
+
+    private async void OnCancelSelectedCLChangeDelete(object? sender, RoutedEventArgs e)
+    {
+        await ViewModel.CancelSelectedCLChangeDeleteAsync();
+    }
+
+    private async void OnRevertSelectedCLChangeModified(object? sender, RoutedEventArgs e)
+    {
+        await ViewModel.RevertSelectedCLChangeModifiedAsync();
     }
 
     private async void OnRestorePendingCommit(object? sender, RoutedEventArgs e)
@@ -343,6 +359,16 @@ public partial class MainWindow : Window
         Close();
     }
 
+    private void OnPendingContextMenuOpened(object? sender, RoutedEventArgs e)
+    {
+        UpdatePendingContextMenu();
+    }
+
+    private void OnCLChangesContextMenuOpened(object? sender, RoutedEventArgs e)
+    {
+        UpdateCLChangesContextMenu();
+    }
+
     private void UpdatePendingContextMenu()
     {
         var isCommit = ViewModel.CanOperateSelectedPendingCommit;
@@ -357,6 +383,19 @@ public partial class MainWindow : Window
         CancelStagedAddMenuItem.IsVisible = ViewModel.CanCancelSelectedStagedAdd;
         CancelStagedDeleteMenuItem.IsVisible = ViewModel.CanCancelSelectedStagedDelete;
         RevertStagedModifiedMenuItem.IsVisible = ViewModel.CanRevertSelectedStagedModified;
+    }
+
+    private void UpdateCLChangesContextMenu()
+    {
+        var canCancelAdd = ViewModel.CanCancelSelectedCLChangeAdd;
+        var canCancelDelete = ViewModel.CanCancelSelectedCLChangeDelete;
+        var canRevertModified = ViewModel.CanRevertSelectedCLChangeModified;
+        var hasStateAction = canCancelAdd || canCancelDelete || canRevertModified;
+
+        CancelCLChangeAddMenuItem.IsVisible = canCancelAdd;
+        CancelCLChangeDeleteMenuItem.IsVisible = canCancelDelete;
+        RevertCLChangeModifiedMenuItem.IsVisible = canRevertModified;
+        CLChangeActionSeparator.IsVisible = hasStateAction;
     }
 
     private async Task<string?> PickFolderAsync()

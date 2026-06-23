@@ -228,7 +228,13 @@ public sealed class MainWindowViewModel : ObservableObject
     public GitChange? SelectedCommitChange
     {
         get => _selectedCommitChange;
-        set => SetProperty(ref _selectedCommitChange, value);
+        set
+        {
+            if (SetProperty(ref _selectedCommitChange, value))
+            {
+                NotifySelectedCommitChangeActionStateChanged();
+            }
+        }
     }
 
     public string PendingCountText => $"{PendingCommits.Count} ChangeLists";
@@ -240,6 +246,12 @@ public sealed class MainWindowViewModel : ObservableObject
     public bool CanCancelSelectedStagedDelete => IsSelectedChangeListState("Staged Deleted");
 
     public bool CanRevertSelectedStagedModified => IsSelectedChangeListState("Staged Modified");
+
+    public bool CanCancelSelectedCLChangeAdd => SelectedCommitChange is not null && CanCancelSelectedStagedAdd;
+
+    public bool CanCancelSelectedCLChangeDelete => SelectedCommitChange is not null && CanCancelSelectedStagedDelete;
+
+    public bool CanRevertSelectedCLChangeModified => SelectedCommitChange is not null && CanRevertSelectedStagedModified;
 
     public string SelectedPendingCommitChangesTitle
     {
@@ -790,6 +802,30 @@ public sealed class MainWindowViewModel : ObservableObject
             new[] { "restore", "--staged", "--worktree" });
     }
 
+    public async Task CancelSelectedCLChangeAddAsync()
+    {
+        await RunSelectedChangeCommandAsync(
+            "Cancel Add",
+            "Staged Added",
+            new[] { "restore", "--staged" });
+    }
+
+    public async Task CancelSelectedCLChangeDeleteAsync()
+    {
+        await RunSelectedChangeCommandAsync(
+            "Cancel Delete",
+            "Staged Deleted",
+            new[] { "restore", "--staged", "--worktree" });
+    }
+
+    public async Task RevertSelectedCLChangeModifiedAsync()
+    {
+        await RunSelectedChangeCommandAsync(
+            "Revert Modified",
+            "Staged Modified",
+            new[] { "restore", "--staged", "--worktree" });
+    }
+
     public async Task CheckoutSelectedHistoryCommitAsync()
     {
         if (SelectedHistoryEntry is null)
@@ -1140,6 +1176,53 @@ public sealed class MainWindowViewModel : ObservableObject
 
         var pathspecs = changeList.Changes
             .SelectMany(change => GetPathspecs(change.Path))
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Select(path => path.Replace('\\', '/'))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        if (pathspecs.Length == 0)
+        {
+            AppendOutput($"{title} has no paths to operate on.");
+            return;
+        }
+
+        var args = baseArguments.ToList();
+        args.Add("--");
+        args.AddRange(pathspecs);
+
+        StatusText = title;
+        var result = await _git.RunAsync(repositoryRoot, args);
+        AppendCommand(title, repositoryRoot, args, result.StandardOutput, result.StandardError);
+
+        await RefreshAsync();
+        StatusText = result.IsSuccess ? "Ready" : $"{title} failed";
+    }
+
+    private async Task RunSelectedChangeCommandAsync(
+        string title,
+        string expectedState,
+        IReadOnlyList<string> baseArguments)
+    {
+        if (SelectedCommitChange is null)
+        {
+            AppendOutput($"No file selected for {title}.");
+            return;
+        }
+
+        if (!IsSelectedChangeListState(expectedState))
+        {
+            AppendOutput($"{title} is only available for {expectedState} ChangeLists.");
+            return;
+        }
+
+        var repositoryRoot = await ResolveRepositoryRootAsync();
+        if (repositoryRoot is null)
+        {
+            return;
+        }
+
+        var pathspecs = GetPathspecs(SelectedCommitChange.Path)
             .Where(path => !string.IsNullOrWhiteSpace(path))
             .Select(path => path.Replace('\\', '/'))
             .Distinct(StringComparer.Ordinal)
@@ -1532,6 +1615,14 @@ public sealed class MainWindowViewModel : ObservableObject
         OnPropertyChanged(nameof(CanCancelSelectedStagedAdd));
         OnPropertyChanged(nameof(CanCancelSelectedStagedDelete));
         OnPropertyChanged(nameof(CanRevertSelectedStagedModified));
+        NotifySelectedCommitChangeActionStateChanged();
+    }
+
+    private void NotifySelectedCommitChangeActionStateChanged()
+    {
+        OnPropertyChanged(nameof(CanCancelSelectedCLChangeAdd));
+        OnPropertyChanged(nameof(CanCancelSelectedCLChangeDelete));
+        OnPropertyChanged(nameof(CanRevertSelectedCLChangeModified));
     }
 
     private bool IsSelectedChangeListState(string state)
