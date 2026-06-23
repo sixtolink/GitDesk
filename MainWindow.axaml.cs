@@ -14,12 +14,15 @@ namespace GitDesk;
 
 public partial class MainWindow : Window
 {
+    private bool _isSettingsDialogOpen;
     private MainWindowViewModel ViewModel => (MainWindowViewModel)DataContext!;
 
     public MainWindow()
     {
         InitializeComponent();
-        DataContext = new MainWindowViewModel();
+        var viewModel = new MainWindowViewModel();
+        viewModel.GitHubAuthenticationRequested += ShowSettingsDialogAsync;
+        DataContext = viewModel;
     }
 
     protected override async void OnOpened(EventArgs e)
@@ -254,27 +257,45 @@ public partial class MainWindow : Window
 
     private async void OnSettingsClicked(object? sender, RoutedEventArgs e)
     {
-        var settings = await ViewModel.LoadGitHubSettingsAsync();
-        var originUrl = await ViewModel.GetCurrentOriginUrlAsync();
-        var dialogViewModel = new SettingsDialogViewModel(settings, originUrl);
-        var dialog = new SettingsDialog
-        {
-            DataContext = dialogViewModel,
-        };
+        await ShowSettingsDialogAsync();
+    }
 
-        var accepted = await dialog.ShowDialog<bool>(this);
-        if (!accepted)
+    private async Task ShowSettingsDialogAsync()
+    {
+        if (_isSettingsDialogOpen)
         {
             return;
         }
 
-        await ViewModel.SaveGitHubSettingsAsync(
-            dialogViewModel.ToSettings(dialogViewModel.HasStoredCredential),
-            dialogViewModel.Token,
-            dialogViewModel.ConfigureGitIdentity,
-            dialogViewModel.SaveCredential,
-            dialogViewModel.RemoveStoredCredential,
-            dialogViewModel.ConvertOriginToHttps);
+        _isSettingsDialogOpen = true;
+        try
+        {
+            var settings = await ViewModel.LoadGitHubSettingsAsync();
+            var originUrl = await ViewModel.GetCurrentOriginUrlAsync();
+            var dialogViewModel = new SettingsDialogViewModel(settings, originUrl);
+            var dialog = new SettingsDialog
+            {
+                DataContext = dialogViewModel,
+            };
+
+            var accepted = await dialog.ShowDialog<bool>(this);
+            if (!accepted)
+            {
+                return;
+            }
+
+            await ViewModel.SaveGitHubSettingsAsync(
+                dialogViewModel.ToSettings(dialogViewModel.HasStoredCredential),
+                dialogViewModel.Token,
+                dialogViewModel.ConfigureGitIdentity,
+                dialogViewModel.SaveCredential,
+                dialogViewModel.RemoveStoredCredential,
+                dialogViewModel.ConvertOriginToHttps);
+        }
+        finally
+        {
+            _isSettingsDialogOpen = false;
+        }
     }
 
     private void OnClearOutput(object? sender, RoutedEventArgs e)

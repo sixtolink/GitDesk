@@ -35,6 +35,8 @@ public sealed class MainWindowViewModel : ObservableObject
     private GitHistoryEntry? _selectedHistoryEntry;
     private GitChange? _selectedCommitChange;
 
+    public event Func<Task>? GitHubAuthenticationRequested;
+
     public MainWindowViewModel()
     {
         RefreshCommand = new AsyncRelayCommand(_ => RefreshAsync());
@@ -1020,8 +1022,13 @@ public sealed class MainWindowViewModel : ObservableObject
         }
 
         StatusText = title;
-        var result = await _git.RunAsync(repositoryRoot, arguments);
+        var result = await _git.RunAuthenticatedAsync(repositoryRoot, arguments);
         AppendCommand(title, repositoryRoot, arguments, result.StandardOutput, result.StandardError);
+
+        if (GitService.IsAuthenticationFailure(result))
+        {
+            await HandleAuthenticationFailureAsync(result);
+        }
 
         if (refreshAfter)
         {
@@ -1029,6 +1036,24 @@ public sealed class MainWindowViewModel : ObservableObject
         }
 
         StatusText = result.IsSuccess ? "Ready" : $"{title} failed";
+    }
+
+    private async Task HandleAuthenticationFailureAsync(GitCommandResult result)
+    {
+        if (GitService.IsSshPublicKeyFailure(result))
+        {
+            AppendOutput("Authentication failed for an SSH remote. GitHub tokens only work with HTTPS remotes; open Settings and convert origin to HTTPS, or configure an SSH key.");
+        }
+        else
+        {
+            AppendOutput("Authentication failed. Opening Settings so GitHub credentials can be configured.");
+        }
+
+        var handler = GitHubAuthenticationRequested;
+        if (handler is not null)
+        {
+            await handler();
+        }
     }
 
     private async Task RunPathCommandAsync(string title, IReadOnlyList<string> baseArguments, bool refreshAfter)

@@ -1,4 +1,5 @@
 using GitDesk.Models;
+using GitDesk.Services;
 
 namespace GitDesk.ViewModels;
 
@@ -26,6 +27,7 @@ public sealed class SettingsDialogViewModel : ObservableObject
         _gitUserEmail = normalized.GitUserEmail;
         _hasStoredCredential = normalized.HasStoredCredential;
         _currentOriginUrl = currentOriginUrl;
+        _convertOriginToHttps = GitService.TryConvertGitHubSshToHttps(currentOriginUrl, normalized.Host) is not null;
     }
 
     public string Host
@@ -67,7 +69,13 @@ public sealed class SettingsDialogViewModel : ObservableObject
     public bool HasStoredCredential
     {
         get => _hasStoredCredential;
-        set => SetProperty(ref _hasStoredCredential, value);
+        set
+        {
+            if (SetProperty(ref _hasStoredCredential, value))
+            {
+                OnPropertyChanged(nameof(StoredCredentialText));
+            }
+        }
     }
 
     public bool ConfigureGitIdentity

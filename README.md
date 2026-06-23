@@ -48,6 +48,7 @@ dotnet publish -c Release -r osx-arm64 --self-contained true
 - The app shells out to the local `git` executable. It does not implement a custom Git protocol stack.
 - Workspace history is stored locally under the user's application data directory.
 - GitHub tokens are handed to Git Credential Manager through `git credential approve`; GitDesk only stores non-secret settings such as host, username, and Git author identity.
+- Fetch, pull, and push run through Git Credential Manager and open Settings when authentication fails.
 - GitHub tokens only apply to HTTPS remotes. SSH remotes such as `git@github.com:owner/repo.git` should be converted to HTTPS before using token authentication.
 - The vendored LevelDB.NET source is kept under `third_party/leveldb.net` for source visibility.
 

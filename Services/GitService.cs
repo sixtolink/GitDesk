@@ -27,7 +27,29 @@ public sealed class GitService
         IReadOnlyList<string> arguments,
         CancellationToken cancellationToken = default)
     {
-        return await RunAsync(workingDirectory, arguments, null, useUtf8Config: true, cancellationToken);
+        return await RunAsync(
+            workingDirectory,
+            arguments,
+            null,
+            useUtf8Config: true,
+            forceCredentialManager: false,
+            allowCredentialPrompt: false,
+            cancellationToken);
+    }
+
+    public async Task<GitCommandResult> RunAuthenticatedAsync(
+        string workingDirectory,
+        IReadOnlyList<string> arguments,
+        CancellationToken cancellationToken = default)
+    {
+        return await RunAsync(
+            workingDirectory,
+            arguments,
+            null,
+            useUtf8Config: true,
+            forceCredentialManager: true,
+            allowCredentialPrompt: true,
+            cancellationToken);
     }
 
     public async Task<GitCommandResult> RunCredentialAsync(
@@ -48,7 +70,14 @@ public sealed class GitService
 
         args.Add("credential");
         args.Add(command);
-        return await RunAsync(workingDirectory, args, credentialInput, useUtf8Config: false, cancellationToken);
+        return await RunAsync(
+            workingDirectory,
+            args,
+            credentialInput,
+            useUtf8Config: false,
+            forceCredentialManager: false,
+            allowCredentialPrompt: false,
+            cancellationToken);
     }
 
     private async Task<GitCommandResult> RunAsync(
@@ -56,6 +85,8 @@ public sealed class GitService
         IReadOnlyList<string> arguments,
         string? standardInput,
         bool useUtf8Config,
+        bool forceCredentialManager,
+        bool allowCredentialPrompt,
         CancellationToken cancellationToken = default)
     {
         var startInfo = new ProcessStartInfo
@@ -74,7 +105,8 @@ public sealed class GitService
         startInfo.Environment["LANG"] = "C.UTF-8";
         startInfo.Environment["LC_ALL"] = "C.UTF-8";
         startInfo.Environment["LESSCHARSET"] = "utf-8";
-        startInfo.Environment["GIT_TERMINAL_PROMPT"] = "0";
+        startInfo.Environment["GIT_TERMINAL_PROMPT"] = allowCredentialPrompt ? "1" : "0";
+        startInfo.Environment["GCM_INTERACTIVE"] = allowCredentialPrompt ? "1" : "0";
         startInfo.Environment["TERM"] = "dumb";
 
         if (useUtf8Config)
@@ -83,6 +115,14 @@ public sealed class GitService
             {
                 startInfo.ArgumentList.Add(argument);
             }
+        }
+
+        if (forceCredentialManager)
+        {
+            startInfo.ArgumentList.Add("-c");
+            startInfo.ArgumentList.Add("credential.helper=");
+            startInfo.ArgumentList.Add("-c");
+            startInfo.ArgumentList.Add("credential.helper=manager");
         }
 
         foreach (var argument in arguments)
@@ -123,6 +163,30 @@ public sealed class GitService
         args.Add("--get");
         args.Add(key);
         return await RunAsync(workingDirectory, args, cancellationToken);
+    }
+
+    public static bool IsAuthenticationFailure(GitCommandResult result)
+    {
+        if (result.IsSuccess)
+        {
+            return false;
+        }
+
+        var output = $"{result.StandardOutput}\n{result.StandardError}";
+        return output.Contains("Authentication failed", StringComparison.OrdinalIgnoreCase) ||
+               output.Contains("could not read Username", StringComparison.OrdinalIgnoreCase) ||
+               output.Contains("could not read Password", StringComparison.OrdinalIgnoreCase) ||
+               output.Contains("Permission denied (publickey)", StringComparison.OrdinalIgnoreCase) ||
+               output.Contains("Could not read from remote repository", StringComparison.OrdinalIgnoreCase) ||
+               output.Contains("Repository not found", StringComparison.OrdinalIgnoreCase) ||
+               output.Contains("HTTP Basic: Access denied", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool IsSshPublicKeyFailure(GitCommandResult result)
+    {
+        var output = $"{result.StandardOutput}\n{result.StandardError}";
+        return output.Contains("Permission denied (publickey)", StringComparison.OrdinalIgnoreCase) ||
+               output.Contains("Could not read from remote repository", StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task<GitCommandResult> SetGlobalConfigValueAsync(
