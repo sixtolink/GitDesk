@@ -1019,7 +1019,38 @@ public sealed class MainWindowViewModel : ObservableObject
             }
         }
 
-        await RunRepositoryCommandAsync("Pull", new[] { "pull", "--ff-only" }, true);
+        StatusText = "Pull";
+        var pullArgs = new[] { "pull", "--ff-only" };
+        var result = await _git.RunAuthenticatedAsync(repositoryRoot, pullArgs);
+        AppendCommand("Pull", repositoryRoot, pullArgs, result.StandardOutput, result.StandardError);
+
+        if (GitService.IsAuthenticationFailure(result))
+        {
+            await HandleAuthenticationFailureAsync(result);
+        }
+
+        var blockingPaths = GetUntrackedOverwritePaths(result);
+        if (!result.IsSuccess && blockingPaths.Count > 0)
+        {
+            var cleanArgs = new List<string> { "clean", "-ffdx", "--" };
+            cleanArgs.AddRange(blockingPaths);
+            var cleanResult = await _git.RunAsync(repositoryRoot, cleanArgs);
+            AppendCommand("Delete untracked files blocking pull", repositoryRoot, cleanArgs, cleanResult.StandardOutput, cleanResult.StandardError);
+
+            if (cleanResult.IsSuccess)
+            {
+                result = await _git.RunAuthenticatedAsync(repositoryRoot, pullArgs);
+                AppendCommand("Pull", repositoryRoot, pullArgs, result.StandardOutput, result.StandardError);
+
+                if (GitService.IsAuthenticationFailure(result))
+                {
+                    await HandleAuthenticationFailureAsync(result);
+                }
+            }
+        }
+
+        await RefreshAsync();
+        StatusText = result.IsSuccess ? "Ready" : "Pull failed";
     }
 
     private async Task<bool> RecoverDetachedHeadAsync(string repositoryRoot, string revision)
@@ -1865,6 +1896,51 @@ public sealed class MainWindowViewModel : ObservableObject
         var output = $"{result.StandardOutput}\n{result.StandardError}";
         return output.Contains("pathspec", StringComparison.OrdinalIgnoreCase) &&
                output.Contains("did not match any file", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static IReadOnlyList<string> GetUntrackedOverwritePaths(GitCommandResult result)
+    {
+        var output = $"{result.StandardOutput}\n{result.StandardError}";
+        if (!output.Contains("untracked working tree files would be overwritten by merge", StringComparison.OrdinalIgnoreCase))
+        {
+            return Array.Empty<string>();
+        }
+
+        var paths = new List<string>();
+        var readingPaths = false;
+        foreach (var rawLine in SplitOutput(output))
+        {
+            var line = rawLine.TrimEnd();
+            if (line.Contains("untracked working tree files would be overwritten by merge", StringComparison.OrdinalIgnoreCase))
+            {
+                readingPaths = true;
+                continue;
+            }
+
+            if (!readingPaths)
+            {
+                continue;
+            }
+
+            var path = line.Trim();
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                continue;
+            }
+
+            if (path.StartsWith("Please move or remove", StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith("Aborting", StringComparison.OrdinalIgnoreCase))
+            {
+                break;
+            }
+
+            paths.Add(path.Trim('"').Replace('\\', '/'));
+        }
+
+        return paths
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
     }
 
     private static bool PathExists(string path)
