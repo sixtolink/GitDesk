@@ -31,6 +31,8 @@ public sealed class MainWindowViewModel : ObservableObject
     private int _busyDepth;
     private int _commitChangesRequestVersion;
     private int _historyRequestVersion;
+    private bool _hasLoadedHistoryPath;
+    private string _loadedHistoryPath = string.Empty;
     private string _selectedCommitChangesRevision = string.Empty;
     private string _busyText = "Working";
     private string? _selectedWorkspaceHistory;
@@ -599,6 +601,13 @@ public sealed class MainWindowViewModel : ObservableObject
         {
             History.Add(entry);
         }
+
+        SetLoadedHistoryPath(path);
+    }
+
+    public bool IsHistoryLoadedForSelectedPath()
+    {
+        return IsHistoryLoadedForPath(SelectedPath);
     }
 
     public async Task LoadHistoryForSelectedAsync()
@@ -632,6 +641,7 @@ public sealed class MainWindowViewModel : ObservableObject
             History.Add(entry);
         }
 
+        SetLoadedHistoryPath(selectedPath);
         AppendOutput($"History loaded for: {selectedPath}");
     }
 
@@ -2499,6 +2509,35 @@ public sealed class MainWindowViewModel : ObservableObject
             : StringComparer.Ordinal;
 
         return comparer.Equals(Path.GetFullPath(left), Path.GetFullPath(right));
+    }
+
+    private bool IsHistoryLoadedForPath(string? path)
+    {
+        if (!_hasLoadedHistoryPath)
+        {
+            return false;
+        }
+
+        var normalizedPath = NormalizeHistoryPath(path);
+        if (string.IsNullOrWhiteSpace(_loadedHistoryPath) || string.IsNullOrWhiteSpace(normalizedPath))
+        {
+            return string.Equals(_loadedHistoryPath, normalizedPath, StringComparison.Ordinal);
+        }
+
+        return PathEquals(_loadedHistoryPath, normalizedPath);
+    }
+
+    private void SetLoadedHistoryPath(string? path)
+    {
+        _loadedHistoryPath = NormalizeHistoryPath(path);
+        _hasLoadedHistoryPath = true;
+    }
+
+    private static string NormalizeHistoryPath(string? path)
+    {
+        return string.IsNullOrWhiteSpace(path)
+            ? string.Empty
+            : Path.GetFullPath(path);
     }
 
     private sealed class BusyScope : IDisposable

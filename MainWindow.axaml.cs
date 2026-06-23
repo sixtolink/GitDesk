@@ -93,6 +93,11 @@ public partial class MainWindow : Window
 
         ViewModel.SelectedNode = node;
         SelectHistoryTab();
+        if (ViewModel.IsHistoryLoadedForSelectedPath())
+        {
+            return;
+        }
+
         await ViewModel.RunBusyAsync("Loading history", ViewModel.LoadHistoryForSelectedAsync);
     }
 
