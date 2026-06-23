@@ -129,8 +129,7 @@
                     <TextBox Grid.Row="1"
                              Grid.Column="1"
                              Classes="merge-text"
-                             Text="{Binding WorkingContent}"
-                             IsReadOnly="True"
+                             Text="{Binding WorkingContent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                              Background="#FFFFFF" />
                 </Grid>
             </Border>
@@ -170,7 +169,7 @@
                         </Grid>
                     </Border>
                     <TextBox Classes="merge-text"
-                             Text="{Binding WorkingContent, Mode=TwoWay}"
+                             Text="{Binding WorkingContent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                              IsVisible="{Binding IsResultVisible}" />
                 </DockPanel>
             </Border>
