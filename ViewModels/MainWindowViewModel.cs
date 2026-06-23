@@ -483,7 +483,9 @@ public sealed class MainWindowViewModel : ObservableObject
         {
             if (line.StartsWith("## ", StringComparison.Ordinal))
             {
-                CurrentBranch = line[3..];
+                CurrentBranch = line == "## HEAD (no branch)"
+                    ? "Detached HEAD (no branch)"
+                    : line[3..];
                 continue;
             }
 
@@ -850,17 +852,22 @@ public sealed class MainWindowViewModel : ObservableObject
         var currentBranch = await _git.GetCurrentBranchNameAsync(repositoryRoot);
         if (string.IsNullOrWhiteSpace(currentBranch))
         {
-            var containingBranch = (await _git.GetLocalBranchesContainingAsync(repositoryRoot, revision)).FirstOrDefault();
-            if (!string.IsNullOrWhiteSpace(containingBranch))
+            if (await RecoverDetachedHeadAsync(repositoryRoot, revision))
             {
-                await CheckoutBranchAsync(repositoryRoot, containingBranch);
+                currentBranch = await _git.GetCurrentBranchNameAsync(repositoryRoot);
+                if (string.IsNullOrWhiteSpace(currentBranch))
+                {
+                    StatusText = "Checkout failed";
+                    return;
+                }
+            }
+            else
+            {
+                AppendOutput("Cannot checkout commit on a branch because repository is currently detached and no containing local or remote branch was found.");
+                AppendOutput("Checkout a local branch first, then checkout the commit again.");
+                StatusText = "Checkout failed";
                 return;
             }
-
-            AppendOutput("Cannot checkout commit on a branch because repository is currently detached and no containing local branch was found.");
-            AppendOutput("Checkout a local branch first, then checkout the commit again.");
-            StatusText = "Checkout failed";
-            return;
         }
 
         StatusText = $"Checkout {commit.ShortRevision}";
@@ -888,7 +895,7 @@ public sealed class MainWindowViewModel : ObservableObject
         StatusText = result.IsSuccess ? "Ready" : "Checkout failed";
     }
 
-    private async Task CheckoutBranchAsync(string repositoryRoot, string branch)
+    private async Task<bool> CheckoutBranchAsync(string repositoryRoot, string branch)
     {
         StatusText = $"Checkout {branch}";
         var args = new[] { "checkout", branch };
@@ -897,6 +904,33 @@ public sealed class MainWindowViewModel : ObservableObject
 
         await RefreshAsync();
         StatusText = result.IsSuccess ? "Ready" : "Checkout failed";
+        return result.IsSuccess;
+    }
+
+    private async Task<bool> CheckoutBranchFromRemoteAsync(string repositoryRoot, string localBranch, string remoteBranch)
+    {
+        StatusText = $"Checkout {localBranch}";
+        var args = new[] { "checkout", "-B", localBranch, "--track", remoteBranch };
+        var result = await _git.RunAsync(repositoryRoot, args);
+        AppendCommand($"Checkout {localBranch} from {remoteBranch}", repositoryRoot, args, result.StandardOutput, result.StandardError);
+
+        if (!result.IsSuccess)
+        {
+            var fallbackArgs = new[] { "checkout", "-B", localBranch, remoteBranch };
+            result = await _git.RunAsync(repositoryRoot, fallbackArgs);
+            AppendCommand($"Checkout {localBranch} from {remoteBranch}", repositoryRoot, fallbackArgs, result.StandardOutput, result.StandardError);
+        }
+
+        if (result.IsSuccess)
+        {
+            var upstreamArgs = new[] { "branch", "--set-upstream-to", remoteBranch, localBranch };
+            var upstreamResult = await _git.RunAsync(repositoryRoot, upstreamArgs);
+            AppendCommand("Set branch upstream", repositoryRoot, upstreamArgs, upstreamResult.StandardOutput, upstreamResult.StandardError);
+        }
+
+        await RefreshAsync();
+        StatusText = result.IsSuccess ? "Ready" : "Checkout failed";
+        return result.IsSuccess;
     }
 
     private async Task PullAsync()
@@ -910,19 +944,35 @@ public sealed class MainWindowViewModel : ObservableObject
         var currentBranch = await _git.GetCurrentBranchNameAsync(repositoryRoot);
         if (string.IsNullOrWhiteSpace(currentBranch))
         {
-            var containingBranch = (await _git.GetLocalBranchesContainingAsync(repositoryRoot, "HEAD")).FirstOrDefault();
-            if (string.IsNullOrWhiteSpace(containingBranch))
+            if (!await RecoverDetachedHeadAsync(repositoryRoot, "HEAD"))
             {
-                AppendOutput("Cannot pull from detached HEAD. Checkout a local branch first.");
+                AppendOutput("Cannot pull from detached HEAD. No containing local or remote branch was found.");
                 StatusText = "Pull failed";
                 return;
             }
-
-            AppendOutput($"Repository is detached. Checking out local branch before pull: {containingBranch}");
-            await CheckoutBranchAsync(repositoryRoot, containingBranch);
         }
 
         await RunRepositoryCommandAsync("Pull", new[] { "pull", "--ff-only" }, true);
+    }
+
+    private async Task<bool> RecoverDetachedHeadAsync(string repositoryRoot, string revision)
+    {
+        var containingLocalBranch = (await _git.GetLocalBranchesContainingAsync(repositoryRoot, revision)).FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(containingLocalBranch))
+        {
+            AppendOutput($"Repository is detached. Checking out local branch: {containingLocalBranch}");
+            return await CheckoutBranchAsync(repositoryRoot, containingLocalBranch);
+        }
+
+        var containingRemoteBranch = (await _git.GetRemoteBranchesContainingAsync(repositoryRoot, revision)).FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(containingRemoteBranch))
+        {
+            return false;
+        }
+
+        var localBranch = GetLocalBranchNameFromRemote(containingRemoteBranch);
+        AppendOutput($"Repository is detached. Restoring branch {localBranch} from {containingRemoteBranch}.");
+        return await CheckoutBranchFromRemoteAsync(repositoryRoot, localBranch, containingRemoteBranch);
     }
 
     public async Task<IReadOnlyList<GitChange>> GetWorkingTreeChangesAsync()
@@ -1753,6 +1803,14 @@ public sealed class MainWindowViewModel : ObservableObject
     private static bool PathExists(string path)
     {
         return File.Exists(path) || Directory.Exists(path);
+    }
+
+    private static string GetLocalBranchNameFromRemote(string remoteBranch)
+    {
+        var slashIndex = remoteBranch.IndexOf('/');
+        return slashIndex >= 0 && slashIndex + 1 < remoteBranch.Length
+            ? remoteBranch[(slashIndex + 1)..]
+            : remoteBranch;
     }
 
     private static IEnumerable<string> GetPathspecs(string path)

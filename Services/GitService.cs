@@ -298,6 +298,36 @@ public sealed class GitService
             .ToArray();
     }
 
+    public async Task<IReadOnlyList<string>> GetRemoteBranchesContainingAsync(
+        string repositoryRoot,
+        string revision,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(revision))
+        {
+            return Array.Empty<string>();
+        }
+
+        var result = await RunAsync(
+            repositoryRoot,
+            new[] { "branch", "-r", "--contains", revision, "--format=%(refname:short)" },
+            cancellationToken);
+        if (!result.IsSuccess)
+        {
+            return Array.Empty<string>();
+        }
+
+        return result.StandardOutput
+            .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(branch => branch.Trim().TrimStart('*').Trim())
+            .Where(branch =>
+                !string.IsNullOrWhiteSpace(branch) &&
+                !branch.EndsWith("/HEAD", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(branch => branch.StartsWith("origin/", StringComparison.OrdinalIgnoreCase))
+            .ThenBy(branch => branch, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
     public async Task<string?> GetUpstreamBranchNameAsync(
         string repositoryRoot,
         CancellationToken cancellationToken = default)
@@ -628,6 +658,11 @@ public sealed class GitService
 
     private static string FormatStatusLine(string line)
     {
+        if (line == "## HEAD (no branch)")
+        {
+            return "## Detached HEAD (no branch)";
+        }
+
         if (line.StartsWith("## ", StringComparison.Ordinal) || line.Length < 4)
         {
             return line;
