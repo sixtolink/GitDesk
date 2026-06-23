@@ -376,18 +376,16 @@ public sealed class MainWindowViewModel : ObservableObject
             RepositoryRoot = string.Empty;
             CurrentBranch = "No repository";
             StatusText = "Browse workspace";
+            _allPendingCommits.Clear();
+            _allPendingChangeLists.Clear();
+            PendingCommits.Clear();
             SelectedPendingCommitChanges.Clear();
             SelectedPendingCommitChangesTitle = "Selected CL Changes";
+            OnPropertyChanged(nameof(PendingCountText));
             return;
         }
 
         StatusText = "Refreshing";
-        _allPendingCommits.Clear();
-        _allPendingChangeLists.Clear();
-        PendingCommits.Clear();
-        SelectedPendingCommitChanges.Clear();
-        SelectedPendingCommitChangesTitle = "Selected CL Changes";
-        OnPropertyChanged(nameof(PendingCountText));
 
         var probePath = !string.IsNullOrWhiteSpace(SelectedPath) ? SelectedPath : WorkspacePath;
         var root = await _git.FindRepositoryRootAsync(probePath);
@@ -396,6 +394,12 @@ public sealed class MainWindowViewModel : ObservableObject
             RepositoryRoot = string.Empty;
             CurrentBranch = "No repository";
             StatusText = "No Git repository";
+            _allPendingCommits.Clear();
+            _allPendingChangeLists.Clear();
+            PendingCommits.Clear();
+            SelectedPendingCommitChanges.Clear();
+            SelectedPendingCommitChangesTitle = "Selected CL Changes";
+            OnPropertyChanged(nameof(PendingCountText));
             AppendOutput($"No Git repository found for: {probePath}");
             return;
         }
@@ -432,15 +436,14 @@ public sealed class MainWindowViewModel : ObservableObject
         var result = await _git.RunAsync(repositoryRoot, new[] { "status", "--short", "--branch" });
         AppendCommand("Status", repositoryRoot, new[] { "status", "--short", "--branch" }, result.StandardOutput, result.StandardError);
 
-        _allPendingCommits.Clear();
-        _allPendingChangeLists.Clear();
-        PendingCommits.Clear();
         if (!result.IsSuccess)
         {
             CurrentBranch = "Status failed";
-            OnPropertyChanged(nameof(PendingCountText));
             return;
         }
+
+        var nextPendingCommits = new List<GitHistoryEntry>();
+        var nextPendingChangeLists = new List<GitHistoryEntry>();
 
         foreach (var line in result.StandardOutput.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries))
         {
@@ -459,8 +462,8 @@ public sealed class MainWindowViewModel : ObservableObject
 
         foreach (var commit in await _git.GetPendingCommitsAsync(repositoryRoot))
         {
-            _allPendingCommits.Add(commit);
-            _allPendingChangeLists.Add(commit);
+            nextPendingCommits.Add(commit);
+            nextPendingChangeLists.Add(commit);
         }
 
         var stagedChanges = (await _git.GetStatusAsync(repositoryRoot))
@@ -471,9 +474,13 @@ public sealed class MainWindowViewModel : ObservableObject
 
         foreach (var group in stagedChanges)
         {
-            _allPendingChangeLists.Add(GitHistoryEntry.FromChanges(group.Key, group.ToArray()));
+            nextPendingChangeLists.Add(GitHistoryEntry.FromChanges(group.Key, group.ToArray()));
         }
 
+        _allPendingCommits.Clear();
+        _allPendingCommits.AddRange(nextPendingCommits);
+        _allPendingChangeLists.Clear();
+        _allPendingChangeLists.AddRange(nextPendingChangeLists);
         ApplyPendingFilter();
     }
 
