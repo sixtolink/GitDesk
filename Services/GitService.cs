@@ -271,6 +271,33 @@ public sealed class GitService
             .ToArray();
     }
 
+    public async Task<IReadOnlyList<string>> GetLocalBranchesContainingAsync(
+        string repositoryRoot,
+        string revision,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(revision))
+        {
+            return Array.Empty<string>();
+        }
+
+        var result = await RunAsync(
+            repositoryRoot,
+            new[] { "branch", "--contains", revision, "--format=%(refname:short)" },
+            cancellationToken);
+        if (!result.IsSuccess)
+        {
+            return Array.Empty<string>();
+        }
+
+        return result.StandardOutput
+            .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(branch => branch.Trim().TrimStart('*').Trim())
+            .Where(branch => !string.IsNullOrWhiteSpace(branch) && branch != "(HEAD detached)")
+            .OrderBy(branch => branch, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
     public async Task<string?> GetUpstreamBranchNameAsync(
         string repositoryRoot,
         CancellationToken cancellationToken = default)

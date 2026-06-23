@@ -42,7 +42,7 @@ public sealed class MainWindowViewModel : ObservableObject
         RefreshCommand = new AsyncRelayCommand(_ => RefreshAsync());
         InitRepositoryCommand = new AsyncRelayCommand(_ => InitRepositoryAsync());
         FetchCommand = new AsyncRelayCommand(_ => RunRepositoryCommandAsync("Fetch", new[] { "fetch", "--all", "--prune" }, true));
-        PullCommand = new AsyncRelayCommand(_ => RunRepositoryCommandAsync("Pull", new[] { "pull", "--ff-only" }, true));
+        PullCommand = new AsyncRelayCommand(_ => PullAsync());
         CommitCommand = new AsyncRelayCommand(_ => CommitAsync());
         OpenSelectedFolderCommand = new AsyncRelayCommand(_ => OpenSelectedFolderAsync());
         RevertPendingCommitCommand = new AsyncRelayCommand(_ => RevertSelectedPendingCommitAsync());
@@ -847,17 +847,82 @@ public sealed class MainWindowViewModel : ObservableObject
         }
 
         var revision = commit.Revision;
+        var currentBranch = await _git.GetCurrentBranchNameAsync(repositoryRoot);
+        if (string.IsNullOrWhiteSpace(currentBranch))
+        {
+            var containingBranch = (await _git.GetLocalBranchesContainingAsync(repositoryRoot, revision)).FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(containingBranch))
+            {
+                await CheckoutBranchAsync(repositoryRoot, containingBranch);
+                return;
+            }
+
+            AppendOutput("Cannot checkout commit on a branch because repository is currently detached and no containing local branch was found.");
+            AppendOutput("Checkout a local branch first, then checkout the commit again.");
+            StatusText = "Checkout failed";
+            return;
+        }
+
         StatusText = $"Checkout {commit.ShortRevision}";
-        var result = await _git.RunAsync(repositoryRoot, new[] { "checkout", revision });
+        var args = new[] { "checkout", "-B", currentBranch, revision };
+        var result = await _git.RunAsync(repositoryRoot, args);
         AppendCommand(
-            $"Checkout {commit.ShortRevision}",
+            $"Checkout {commit.ShortRevision} on {currentBranch}",
             repositoryRoot,
-            new[] { "checkout", revision },
+            args,
             result.StandardOutput,
             result.StandardError);
 
+        if (result.IsSuccess)
+        {
+            var upstream = await _git.GetUpstreamBranchNameAsync(repositoryRoot);
+            if (string.IsNullOrWhiteSpace(upstream))
+            {
+                var setUpstreamArgs = new[] { "branch", "--set-upstream-to", $"origin/{currentBranch}", currentBranch };
+                var setUpstreamResult = await _git.RunAsync(repositoryRoot, setUpstreamArgs);
+                AppendCommand("Set branch upstream", repositoryRoot, setUpstreamArgs, setUpstreamResult.StandardOutput, setUpstreamResult.StandardError);
+            }
+        }
+
         await RefreshAsync();
         StatusText = result.IsSuccess ? "Ready" : "Checkout failed";
+    }
+
+    private async Task CheckoutBranchAsync(string repositoryRoot, string branch)
+    {
+        StatusText = $"Checkout {branch}";
+        var args = new[] { "checkout", branch };
+        var result = await _git.RunAsync(repositoryRoot, args);
+        AppendCommand($"Checkout {branch}", repositoryRoot, args, result.StandardOutput, result.StandardError);
+
+        await RefreshAsync();
+        StatusText = result.IsSuccess ? "Ready" : "Checkout failed";
+    }
+
+    private async Task PullAsync()
+    {
+        var repositoryRoot = await ResolveRepositoryRootAsync();
+        if (repositoryRoot is null)
+        {
+            return;
+        }
+
+        var currentBranch = await _git.GetCurrentBranchNameAsync(repositoryRoot);
+        if (string.IsNullOrWhiteSpace(currentBranch))
+        {
+            var containingBranch = (await _git.GetLocalBranchesContainingAsync(repositoryRoot, "HEAD")).FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(containingBranch))
+            {
+                AppendOutput("Cannot pull from detached HEAD. Checkout a local branch first.");
+                StatusText = "Pull failed";
+                return;
+            }
+
+            AppendOutput($"Repository is detached. Checking out local branch before pull: {containingBranch}");
+            await CheckoutBranchAsync(repositoryRoot, containingBranch);
+        }
+
+        await RunRepositoryCommandAsync("Pull", new[] { "pull", "--ff-only" }, true);
     }
 
     public async Task<IReadOnlyList<GitChange>> GetWorkingTreeChangesAsync()
