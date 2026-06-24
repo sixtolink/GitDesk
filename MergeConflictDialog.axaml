@@ -18,7 +18,7 @@
         <Style Selector="TextBlock.header">
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="FontSize" Value="12" />
-            <Setter Property="Foreground" Value="#222222" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
@@ -32,16 +32,16 @@
         </Style>
     </Window.Styles>
 
-    <DockPanel Background="#F1F1F1">
+    <DockPanel Background="{DynamicResource ApplicationPageBackgroundThemeBrush}">
         <Border DockPanel.Dock="Top"
-                BorderBrush="#C8C8C8"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                 BorderThickness="0,0,0,1"
-                Background="#E8E8E8"
+                Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
                 Padding="8,6">
             <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="{Binding TitleText}" FontSize="14" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding SummaryText}" FontSize="12" Foreground="#555555" />
+                    <TextBlock Text="{Binding SummaryText}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
                 <Button Grid.Column="1" Classes="toolbar" Content="Use Ours File" Click="OnUseOursClicked" />
                 <Button Grid.Column="2" Classes="toolbar" Content="Use Theirs File" Click="OnUseTheirsClicked" />
@@ -61,42 +61,42 @@
                 <RowDefinition Height="{Binding ResultRestoreRowHeight}" />
             </Grid.RowDefinitions>
 
-            <Border Grid.Row="0" Grid.Column="0" BorderBrush="#C8C8C8" BorderThickness="1" Background="#FFFFFF">
+            <Border Grid.Row="0" Grid.Column="0" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
                 <DockPanel>
-                    <Border DockPanel.Dock="Top" Padding="6,3" Background="#ECECEC" BorderBrush="#D6D6D6" BorderThickness="0,0,0,1">
+                    <Border DockPanel.Dock="Top" Padding="6,3" Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
                         <TextBlock Classes="header" Text="{Binding BaseHeaderText}" />
                     </Border>
                     <TextBox Classes="merge-text" Text="{Binding BaseContent}" IsReadOnly="True" />
                 </DockPanel>
             </Border>
 
-            <GridSplitter Grid.Row="0" Grid.Column="1" Width="5" Background="#D0D0D0" ResizeDirection="Columns" />
+            <GridSplitter Grid.Row="0" Grid.Column="1" Width="5" Background="{DynamicResource DividerStrokeColorDefaultBrush}" ResizeDirection="Columns" />
 
-            <Border Grid.Row="0" Grid.Column="2" BorderBrush="#C8C8C8" BorderThickness="1" Background="#FFFFFF">
+            <Border Grid.Row="0" Grid.Column="2" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
                 <DockPanel>
-                    <Border DockPanel.Dock="Top" Padding="6,3" Background="#ECECEC" BorderBrush="#D6D6D6" BorderThickness="0,0,0,1">
+                    <Border DockPanel.Dock="Top" Padding="6,3" Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
                         <TextBlock Classes="header" Text="{Binding OursHeaderText}" />
                     </Border>
                     <TextBox Classes="merge-text" Text="{Binding OursContent}" IsReadOnly="True" />
                 </DockPanel>
             </Border>
 
-            <GridSplitter Grid.Row="0" Grid.Column="3" Width="5" Background="#D0D0D0" ResizeDirection="Columns" />
+            <GridSplitter Grid.Row="0" Grid.Column="3" Width="5" Background="{DynamicResource DividerStrokeColorDefaultBrush}" ResizeDirection="Columns" />
 
-            <Border Grid.Row="0" Grid.Column="4" BorderBrush="#C8C8C8" BorderThickness="1" Background="#FFFFFF">
+            <Border Grid.Row="0" Grid.Column="4" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
                 <DockPanel>
-                    <Border DockPanel.Dock="Top" Padding="6,3" Background="#ECECEC" BorderBrush="#D6D6D6" BorderThickness="0,0,0,1">
+                    <Border DockPanel.Dock="Top" Padding="6,3" Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
                         <TextBlock Classes="header" Text="{Binding TheirsHeaderText}" />
                     </Border>
                     <TextBox Classes="merge-text" Text="{Binding TheirsContent}" IsReadOnly="True" />
                 </DockPanel>
             </Border>
 
-            <GridSplitter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="5" Height="5" Background="#D0D0D0" ResizeDirection="Rows" />
+            <GridSplitter Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="5" Height="5" Background="{DynamicResource DividerStrokeColorDefaultBrush}" ResizeDirection="Rows" />
 
-            <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" BorderBrush="#B8B8B8" BorderThickness="1" Background="#FAFAFA">
+            <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
                 <Grid RowDefinitions="Auto,*" ColumnDefinitions="360,*">
-                    <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Padding="6,3" Background="#ECECEC" BorderBrush="#D6D6D6" BorderThickness="0,0,0,1">
+                    <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Padding="6,3" Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
                         <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                             <TextBlock Grid.Column="0" Classes="header" Text="{Binding MergeSummaryText}" />
                             <Button Grid.Column="1" Classes="toolbar" Content="Prev" Click="OnPreviousConflictClicked" />
@@ -130,7 +130,7 @@
                              Grid.Column="1"
                              Classes="merge-text"
                              Text="{Binding WorkingContent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             Background="#FFFFFF" />
+                             Background="{DynamicResource TextControlBackground}" />
                 </Grid>
             </Border>
 
@@ -138,25 +138,25 @@
                           Grid.Column="0"
                           Grid.ColumnSpan="5"
                           Height="5"
-                          Background="#D0D0D0"
+                          Background="{DynamicResource DividerStrokeColorDefaultBrush}"
                           ResizeDirection="Rows"
                           IsVisible="{Binding IsResultVisible}" />
 
             <Border Grid.Row="4"
                     Grid.Column="0"
                     Grid.ColumnSpan="5"
-                    BorderBrush="#C8C8C8"
+                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                     BorderThickness="1"
-                    Background="#FFFFFF"
+                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
                     IsVisible="{Binding IsResultVisible}">
                 <DockPanel>
-                    <Border DockPanel.Dock="Top" Padding="6,3" Background="#ECECEC" BorderBrush="#D6D6D6" BorderThickness="0,0,0,1">
+                    <Border DockPanel.Dock="Top" Padding="6,3" Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
                         <Grid ColumnDefinitions="*,Auto,Auto">
                             <TextBlock Grid.Column="0" Classes="header" Text="{Binding WorkingHeaderText}" />
                             <TextBlock Grid.Column="1"
                                        Text="{Binding SelectedConflictText}"
                                        FontSize="12"
-                                       Foreground="#555555"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                        VerticalAlignment="Center" />
                             <Button Grid.Column="2"
                                     Content="{Binding ResultVisibilityIcon}"
@@ -177,16 +177,16 @@
             <Border Grid.Row="5"
                     Grid.Column="0"
                     Grid.ColumnSpan="5"
-                    BorderBrush="#C8C8C8"
+                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                     BorderThickness="1"
-                    Background="#ECECEC"
+                    Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
                     IsVisible="{Binding IsResultHidden}">
                 <Grid ColumnDefinitions="*,Auto">
                     <TextBlock Grid.Column="0"
                                Text="Merged Result hidden"
                                Margin="8,0"
                                VerticalAlignment="Center"
-                               Foreground="#555555" />
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                     <Button Grid.Column="1"
                             Content="{Binding ResultVisibilityIcon}"
                             Width="28"

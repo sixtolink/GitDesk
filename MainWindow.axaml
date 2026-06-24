@@ -25,13 +25,13 @@
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
         <Style Selector="Border.panel">
-            <Setter Property="BorderBrush" Value="#C9C9C9" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Background" Value="#FAFAFA" />
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
         </Style>
     </Window.Styles>
 
-    <DockPanel Background="#F2F2F2">
+    <DockPanel Background="{DynamicResource ApplicationPageBackgroundThemeBrush}">
         <Menu DockPanel.Dock="Top" FontSize="13">
             <MenuItem Header="_File">
                 <MenuItem Header="Open Workspace..." Click="OnBrowseWorkspace" />
@@ -66,7 +66,7 @@
             <MenuItem Header="_Help" />
         </Menu>
 
-        <Border DockPanel.Dock="Top" Background="#F8F8F8" Padding="4">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}" Padding="4">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <TextBlock Grid.Column="0" Text="Workspace" VerticalAlignment="Center" Margin="4,0,8,0" />
                 <ComboBox x:Name="WorkspaceSelector"
@@ -79,14 +79,14 @@
         </Border>
 
         <Border DockPanel.Dock="Bottom"
-                BorderBrush="#BDBDBD"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                 BorderThickness="0,1,0,0"
-                Background="#EDEDED"
+                Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
                 Padding="8,4">
             <Grid ColumnDefinitions="*,Auto,Auto">
                 <TextBlock Grid.Column="0" Text="{Binding StatusText}" />
                 <TextBlock Grid.Column="1" Text="{Binding CurrentBranch}" Margin="12,0" />
-                <TextBlock Grid.Column="2" Text="{Binding RepositoryRoot}" Foreground="#555555" />
+                <TextBlock Grid.Column="2" Text="{Binding RepositoryRoot}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
             </Grid>
         </Border>
 
@@ -102,9 +102,9 @@
                 <Border Grid.Column="0" Classes="panel">
                     <DockPanel>
                         <Border DockPanel.Dock="Top"
-                                BorderBrush="#D6D6D6"
+                                BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
                                 BorderThickness="0,0,0,1"
-                                Background="#ECECEC"
+                                Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
                                 Height="34">
                             <Grid ColumnDefinitions="*,Auto">
                                 <TextBlock Classes="section-title" Text="Workspace" />
@@ -152,7 +152,7 @@
                     </DockPanel>
                 </Border>
 
-                <GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="#D0D0D0" />
+                <GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="{DynamicResource DividerStrokeColorDefaultBrush}" />
 
                 <Border Grid.Column="2" Classes="panel">
                     <Grid RowDefinitions="*,5,240">
@@ -162,10 +162,10 @@
                             <TabItem Header="ChangeLists">
                                 <Grid RowDefinitions="Auto,*">
                                     <Border Grid.Row="0"
-                                            BorderBrush="#DFDFDF"
+                                            BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
                                             BorderThickness="0,0,0,1"
                                             Padding="8"
-                                            Background="#F8F8F8">
+                                            Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}">
                                         <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                                             <TextBlock Text="Filter" VerticalAlignment="Center" Margin="0,0,8,0" />
                                             <TextBox Grid.Column="1"
@@ -245,20 +245,20 @@
                             </TabItem>
                         </TabControl>
 
-                        <GridSplitter Grid.Row="1"
-                                      ResizeDirection="Rows"
-                                      Background="#D0D0D0" />
+                <GridSplitter Grid.Row="1"
+                              ResizeDirection="Rows"
+                              Background="{DynamicResource DividerStrokeColorDefaultBrush}" />
 
-                        <Border Grid.Row="2"
-                                BorderBrush="#BDBDBD"
-                                BorderThickness="0,1,0,0"
-                                Background="#FAFAFA">
-                            <DockPanel>
-                                <Border DockPanel.Dock="Top"
-                                        Background="#ECECEC"
-                                        BorderBrush="#D6D6D6"
-                                        BorderThickness="0,0,0,1"
-                                        Height="30">
+                <Border Grid.Row="2"
+                        BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                        BorderThickness="0,1,0,0"
+                        Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top"
+                                Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
+                                BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                                BorderThickness="0,0,0,1"
+                                Height="30">
                                     <TextBlock Classes="section-title" Text="{Binding SelectedPendingCommitChangesTitle}" />
                                 </Border>
                                 <DataGrid x:Name="CLChangesGrid"
@@ -300,7 +300,7 @@
 
             <GridSplitter Grid.Row="1"
                           ResizeDirection="Rows"
-                          Background="#D0D0D0"
+                          Background="{DynamicResource DividerStrokeColorDefaultBrush}"
                           IsVisible="{Binding IsOutputVisible}" />
 
             <Border Grid.Row="2"
@@ -309,8 +309,8 @@
                     IsVisible="{Binding IsOutputVisible}">
                 <DockPanel>
                     <Border DockPanel.Dock="Top"
-                            Background="#ECECEC"
-                            BorderBrush="#D6D6D6"
+                            Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
+                            BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
                             BorderThickness="0,0,0,1"
                             Height="30">
                         <Grid ColumnDefinitions="*,Auto,Auto">
@@ -333,7 +333,7 @@
                     <TextBox Text="{Binding OutputText}"
                              FontFamily="Consolas"
                              FontSize="12"
-                             Background="#FFFFFF"
+                             Background="{DynamicResource TextControlBackground}"
                              IsReadOnly="True"
                              AcceptsReturn="True"
                              TextWrapping="NoWrap"
@@ -343,9 +343,9 @@
             </Border>
 
             <Border Grid.Row="3"
-                    BorderBrush="#BDBDBD"
+                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                     BorderThickness="1,1,1,0"
-                    Background="#ECECEC"
+                    Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
                     Height="28"
                     IsVisible="{Binding IsOutputHidden}">
                 <Grid ColumnDefinitions="*,Auto">
@@ -353,7 +353,7 @@
                                Text="Output hidden"
                                Margin="8,0"
                                VerticalAlignment="Center"
-                               Foreground="#555555" />
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                     <Button Grid.Column="1"
                             Content="{Binding OutputVisibilityIcon}"
                             Margin="0,3,6,3"
@@ -372,8 +372,8 @@
                 <Border Width="340"
                         Padding="22"
                         CornerRadius="6"
-                        Background="#F7F7F7"
-                        BorderBrush="#BDBDBD"
+                        Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                         BorderThickness="1"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center">
@@ -387,7 +387,7 @@
                                      IsIndeterminate="True" />
                         <TextBlock Text="Command is running, please wait..."
                                    FontSize="12"
-                                   Foreground="#555555"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                    HorizontalAlignment="Center" />
                     </StackPanel>
                 </Border>

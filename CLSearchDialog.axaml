@@ -7,7 +7,7 @@
         MinWidth="360"
         MinHeight="140"
         WindowStartupLocation="CenterOwner">
-    <DockPanel Background="#F2F2F2" Margin="12">
+    <DockPanel Background="{DynamicResource ApplicationPageBackgroundThemeBrush}" Margin="12">
         <TextBlock DockPanel.Dock="Top"
                    Text="Commit"
                    Margin="0,0,0,6" />

@@ -26,10 +26,10 @@
                       SelectedItem="{Binding SelectedBranch, Mode=TwoWay}"
                       HorizontalAlignment="Stretch" />
             <TextBlock Text="Push selected local branch to origin with the same branch name."
-                       Foreground="#555555"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                        TextWrapping="Wrap" />
             <TextBlock Text="{Binding ErrorText}"
-                       Foreground="#B00020"
+                       Foreground="{DynamicResource SystemFillColorCriticalBrush}"
                        IsVisible="{Binding HasError}" />
         </StackPanel>
 
