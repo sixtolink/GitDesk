@@ -33,9 +33,21 @@ GitDesk is a cross-platform desktop Git UI built with C# and Avalonia. It focuse
 ## Requirements
 
 - .NET SDK 10.0 (the project multi-targets `net9.0;net10.0`, so the .NET 10 SDK is
-  required to build — it can build the `net9.0` target too). Install it via
-  `winget install --id Microsoft.DotNet.SDK.10 -e`.
+  required to build — it can build the `net9.0` target too).
 - Git available on `PATH`
+
+### Install the .NET SDKs (winget)
+
+```powershell
+# .NET SDK 9
+winget install --id Microsoft.DotNet.SDK.9 -e --accept-source-agreements --accept-package-agreements
+
+# .NET SDK 10
+winget install --id Microsoft.DotNet.SDK.10 -e --accept-source-agreements --accept-package-agreements
+```
+
+Both SDKs install side by side under `C:\Program Files\dotnet\` and do not conflict.
+Open a new terminal afterwards and run `dotnet --list-sdks` to verify.
 
 ## Target Frameworks
 
