@@ -7,10 +7,10 @@
         MinWidth="720"
         MinHeight="420"
         WindowStartupLocation="CenterOwner">
-    <DockPanel Background="#F2F2F2">
+    <DockPanel Background="{DynamicResource ApplicationPageBackgroundThemeBrush}">
         <Border DockPanel.Dock="Top"
-                Background="#ECECEC"
-                BorderBrush="#C9C9C9"
+                Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                 BorderThickness="0,0,0,1"
                 Padding="8">
             <Grid ColumnDefinitions="*,Auto">
@@ -19,7 +19,7 @@
                                FontWeight="SemiBold"
                                FontSize="14" />
                     <TextBlock Text="{Binding DetailText}"
-                               Foreground="#555555"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                FontSize="12" />
                 </StackPanel>
                 <Button Grid.Column="1"

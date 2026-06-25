@@ -18,7 +18,7 @@
             <Setter Property="Margin" Value="0,0,12,0" />
         </Style>
         <Style Selector="TextBlock.hint">
-            <Setter Property="Foreground" Value="#555555" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
             <Setter Property="TextWrapping" Value="Wrap" />
         </Style>
         <Style Selector="Button.dialog-action">
@@ -31,7 +31,7 @@
     <Grid RowDefinitions="*,Auto" Margin="18" RowSpacing="14">
         <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="18">
-                <Border BorderBrush="#D0D0D0" BorderThickness="1" Padding="14" Background="#FAFAFA">
+                <Border BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" Padding="14" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
                     <StackPanel Spacing="10">
                         <TextBlock Classes="section-title" Text="Git Identity" />
                         <TextBlock Classes="hint"
@@ -53,7 +53,7 @@
                     </StackPanel>
                 </Border>
 
-                <Border BorderBrush="#D0D0D0" BorderThickness="1" Padding="14" Background="#FAFAFA">
+                <Border BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" Padding="14" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
                     <StackPanel Spacing="10">
                         <TextBlock Classes="section-title" Text="GitHub HTTPS Credentials" />
                         <TextBlock Classes="hint"
@@ -84,7 +84,7 @@
                     </StackPanel>
                 </Border>
 
-                <Border BorderBrush="#D0D0D0" BorderThickness="1" Padding="14" Background="#FAFAFA">
+                <Border BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" Padding="14" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
                     <StackPanel Spacing="10">
                         <TextBlock Classes="section-title" Text="Current Repository Remote" />
                         <Grid ColumnDefinitions="140,*" RowDefinitions="Auto" RowSpacing="8">
@@ -106,7 +106,7 @@
         <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
             <TextBlock Grid.Column="0"
                        Text="{Binding ErrorText}"
-                       Foreground="#B00020"
+                       Foreground="{DynamicResource SystemFillColorCriticalBrush}"
                        VerticalAlignment="Center"
                        IsVisible="{Binding HasError}" />
             <StackPanel Grid.Column="1"

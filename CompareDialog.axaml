@@ -14,8 +14,8 @@
             <Setter Property="Margin" Value="1,0" />
             <Setter Property="Padding" Value="6,0" />
             <Setter Property="FontSize" Value="12" />
-            <Setter Property="Background" Value="#D9D9D9" />
-            <Setter Property="BorderBrush" Value="#BEBEBE" />
+            <Setter Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
         <Style Selector="TextBlock.code">
@@ -39,8 +39,8 @@
         </Style>
     </Window.Styles>
 
-    <DockPanel Background="#F1F1F1">
-        <Menu DockPanel.Dock="Top" FontSize="12" Background="#F5F5F5">
+    <DockPanel Background="{DynamicResource ApplicationPageBackgroundThemeBrush}">
+        <Menu DockPanel.Dock="Top" FontSize="12" Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}">
             <MenuItem Header="_File">
                 <MenuItem Header="Close" Click="OnCloseClicked" />
             </MenuItem>
@@ -51,9 +51,9 @@
         </Menu>
 
         <Border DockPanel.Dock="Top"
-                BorderBrush="#C8C8C8"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                 BorderThickness="0,0,0,1"
-                Background="#E8E8E8"
+                Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
                 Padding="6,4">
             <StackPanel Orientation="Horizontal" Spacing="3">
                 <Button Classes="toolbar" Content="R" ToolTip.Tip="Refresh compare view" Click="OnRefreshClicked" />
@@ -61,15 +61,15 @@
                 <Button Classes="toolbar" Content="CL" ToolTip.Tip="Copy left content" Click="OnCopyLeftContentClicked" />
                 <Button Classes="toolbar" Content="CR" ToolTip.Tip="Copy right content" Click="OnCopyRightContentClicked" />
                 <Button Classes="toolbar" Content="CA" ToolTip.Tip="Copy all compare content" Click="OnCopyAllContentClicked" />
-                <TextBlock Text="|" Margin="8,0" VerticalAlignment="Center" Foreground="#777777" />
+                <TextBlock Text="|" Margin="8,0" VerticalAlignment="Center"                            Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                 <Button Classes="toolbar" Content="U" ToolTip.Tip="Undo is not available in read-only compare" IsEnabled="False" />
                 <Button Classes="toolbar" Content="D" ToolTip.Tip="Redo is not available in read-only compare" IsEnabled="False" />
-                <TextBlock Text="-" Margin="8,0" VerticalAlignment="Center" Foreground="#777777" />
+                <TextBlock Text="-" Margin="8,0" VerticalAlignment="Center"                            Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                 <Button Classes="toolbar" Content="|&lt;" ToolTip.Tip="First difference" Click="OnFirstDifferenceClicked" />
                 <Button Classes="toolbar" Content="&lt;" ToolTip.Tip="Previous difference" Click="OnPreviousDifferenceClicked" />
                 <Button Classes="toolbar" Content="&gt;" ToolTip.Tip="Next difference" Click="OnNextDifferenceClicked" />
                 <Button Classes="toolbar" Content="&gt;|" ToolTip.Tip="Last difference" Click="OnLastDifferenceClicked" />
-                <TextBlock Text="-" Margin="8,0" VerticalAlignment="Center" Foreground="#777777" />
+                <TextBlock Text="-" Margin="8,0" VerticalAlignment="Center"                            Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                 <TextBox x:Name="FindTextBox"
                          Width="180"
                          Height="25"
@@ -78,23 +78,23 @@
                          KeyDown="OnFindTextBoxKeyDown" />
                 <Button Classes="toolbar" Content="FP" ToolTip.Tip="Find previous" Click="OnFindPreviousClicked" />
                 <Button Classes="toolbar" Content="FN" ToolTip.Tip="Find next" Click="OnFindNextClicked" />
-                <TextBlock Text="|" Margin="8,0" VerticalAlignment="Center" Foreground="#777777" />
+                <TextBlock Text="|" Margin="8,0" VerticalAlignment="Center"                            Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                 <Button Classes="toolbar" Content="LN" ToolTip.Tip="Line numbers are always shown" IsEnabled="False" />
                 <Button Classes="toolbar" Content="DI" ToolTip.Tip="Differences are highlighted in the editor" IsEnabled="False" />
                 <TextBlock Text="{Binding StatusModeText}"
                            VerticalAlignment="Center"
                            Margin="12,0,0,0"
                            FontSize="13"
-                           Foreground="#111111" />
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
             </StackPanel>
         </Border>
 
         <Border DockPanel.Dock="Top"
-                BorderBrush="#C8C8C8"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                 BorderThickness="0,0,0,1"
-                Background="#F7F7F7"
+                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                 Padding="7,3">
-            <TextBlock Text="{Binding SummaryText}" FontSize="12" Foreground="#222222" />
+            <TextBlock Text="{Binding SummaryText}" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
         </Border>
 
         <Grid RowDefinitions="Auto,*" ColumnDefinitions="*,5,*">

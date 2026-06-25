@@ -38,11 +38,11 @@
                        Text="{Binding SummaryText}"
                        VerticalAlignment="Center"
                        Margin="16,0,0,0"
-                       Foreground="#555555" />
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
             <TextBlock Grid.Column="2"
                        Text="{Binding ErrorText}"
                        VerticalAlignment="Center"
-                       Foreground="#B00020"
+                       Foreground="{DynamicResource SystemFillColorCriticalBrush}"
                        IsVisible="{Binding HasError}" />
         </Grid>
 
